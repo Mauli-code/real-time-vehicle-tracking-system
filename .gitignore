@@ -1,0 +1,9 @@
+# Node.js dependencies — never commit these
+backend/node_modules/
+
+# macOS system file
+.DS_Store
+
+# Environment variable files — will hold secrets later
+.env
+backend/.env

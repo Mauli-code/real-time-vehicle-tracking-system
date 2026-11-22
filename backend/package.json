@@ -1,0 +1,17 @@
+{
+  "name": "real-time-vehicle-tracking-system",
+  "version": "1.0.0",
+  "description": "Backend server for the Real-Time Vehicle Tracking System",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "express": "^5.3.0"
+  }
+}
