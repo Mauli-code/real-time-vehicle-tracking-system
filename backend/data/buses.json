@@ -1,0 +1,57 @@
+[
+  {
+    "id": "BUS001",
+    "busNumber": "HP-01-1234",
+    "source": "Shimla",
+    "destination": "Manali",
+    "routeName": "Shimla - Manali Highway Route",
+    "fuelType": "Diesel",
+    "emissionStandard": "BS-VI",
+    "available": true,
+    "note": "DEMO DATA"
+  },
+  {
+    "id": "BUS002",
+    "busNumber": "HP-01-5678",
+    "source": "Shimla",
+    "destination": "Solan",
+    "routeName": "Shimla - Solan Local Route",
+    "fuelType": "CNG",
+    "emissionStandard": "BS-VI",
+    "available": true,
+    "note": "DEMO DATA"
+  },
+  {
+    "id": "BUS003",
+    "busNumber": "HP-07-4321",
+    "source": "Dharamshala",
+    "destination": "Kangra",
+    "routeName": "Dharamshala - Kangra Valley Route",
+    "fuelType": "Diesel",
+    "emissionStandard": "BS-IV",
+    "available": false,
+    "note": "DEMO DATA"
+  },
+  {
+    "id": "BUS004",
+    "busNumber": "HP-03-9900",
+    "source": "Mandi",
+    "destination": "Kullu",
+    "routeName": "Mandi - Kullu Beas Valley Route",
+    "fuelType": "Electric",
+    "emissionStandard": "N/A",
+    "available": true,
+    "note": "DEMO DATA"
+  },
+  {
+    "id": "BUS005",
+    "busNumber": "HP-02-7755",
+    "source": "Bilaspur",
+    "destination": "Hamirpur",
+    "routeName": "Bilaspur - Hamirpur District Route",
+    "fuelType": "Diesel",
+    "emissionStandard": "BS-VI",
+    "available": true,
+    "note": "DEMO DATA"
+  }
+]

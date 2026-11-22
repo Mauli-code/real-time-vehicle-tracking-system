@@ -5,9 +5,17 @@
 
 const express = require('express'); // Load the Express library
 const path = require('path');       // Built-in Node.js module for handling file paths
+const fs = require('fs');           // Built-in Node.js module for reading files
 
 const app = express(); // Create an Express application
 const PORT = 3000;     // The port the server will listen on
+
+// --- Load Bus Data ---
+// Read buses.json once when the server starts and store it in memory.
+// fs.readFileSync reads the file contents as a string.
+// JSON.parse converts that string into a JavaScript array we can work with.
+const busesFilePath = path.join(__dirname, 'data', 'buses.json');
+const buses = JSON.parse(fs.readFileSync(busesFilePath, 'utf-8'));
 
 // --- Middleware ---
 
@@ -27,6 +35,32 @@ app.use(express.json());
 // Returns: { "status": "ok" }
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok' });
+});
+
+// GET /api/buses
+// Returns the full list of all buses as a JSON array.
+// Example response: [ { "id": "BUS001", ... }, { "id": "BUS002", ... }, ... ]
+app.get('/api/buses', (req, res) => {
+  res.json(buses);
+});
+
+// GET /api/buses/:id
+// Returns a single bus whose id matches the value in the URL.
+// :id is a route parameter — Express puts whatever the user types after
+// /api/buses/ into req.params.id automatically.
+//
+// Example: GET /api/buses/BUS001  →  returns the bus with id "BUS001"
+// Example: GET /api/buses/BUS999  →  returns 404 { "error": "Bus not found" }
+app.get('/api/buses/:id', (req, res) => {
+  const busId = req.params.id;                             // Read the id from the URL
+  const bus = buses.find((b) => b.id === busId);           // Search the array for a match
+
+  if (!bus) {
+    // No bus matched — send a 404 (Not Found) status with an error message
+    return res.status(404).json({ error: 'Bus not found' });
+  }
+
+  res.json(bus); // Bus found — send it back as JSON
 });
 
 // --- Start the Server ---
