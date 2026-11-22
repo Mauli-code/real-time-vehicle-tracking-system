@@ -48,6 +48,11 @@ checkBtn.addEventListener('click', async () => {
 // Get the container div where bus cards will be placed
 const busContainer = document.getElementById('busContainer');
 
+// allBuses holds the full list fetched from the API.
+// It is declared here (outside loadBuses) so the search
+// function added in Commit 4 can also read it.
+let allBuses = [];
+
 // buildBusCard(bus)
 // Takes one bus object and returns an HTML string for a card.
 // We build the HTML as a string and use innerHTML to insert it.
@@ -100,9 +105,23 @@ function buildBusCard(bus) {
   `;
 }
 
+// renderBuses(list)
+// Takes an array of bus objects and injects their cards into #busContainer.
+// Both loadBuses() and filterBuses() call this function to show cards,
+// so we write the rendering logic once here instead of repeating it.
+function renderBuses(list) {
+  if (list.length === 0) {
+    busContainer.innerHTML = '<p class="empty-msg">No buses found.</p>';
+    return;
+  }
+
+  const allCardsHTML = list.map(buildBusCard).join('');
+  busContainer.innerHTML = '<div class="bus-grid">' + allCardsHTML + '</div>';
+}
+
 // loadBuses()
-// Calls GET /api/buses, reads the response, and renders the cards.
-// It is an async function so we can use await inside it.
+// Calls GET /api/buses, stores the result in allBuses,
+// then renders all cards on the page.
 async function loadBuses() {
   try {
     // Send a GET request to our Express API
@@ -115,20 +134,17 @@ async function loadBuses() {
     }
 
     // Convert the response body from JSON text to a JavaScript array
-    const buses = await response.json();
+    // and save it in allBuses so the search function can use it too
+    allBuses = await response.json();
 
     // Check if the array is empty
-    if (buses.length === 0) {
+    if (allBuses.length === 0) {
       busContainer.innerHTML = '<p class="empty-msg">No buses available at the moment.</p>';
-      return; // Stop here — nothing more to do
+      return;
     }
 
-    // Build one card string for every bus in the array using our helper function,
-    // then join all the strings together into one big HTML string
-    const allCardsHTML = buses.map(buildBusCard).join('');
-
-    // Wrap the cards in a grid div and inject into the page
-    busContainer.innerHTML = '<div class="bus-grid">' + allCardsHTML + '</div>';
+    // Show all buses when the page first loads
+    renderBuses(allBuses);
 
   } catch (error) {
     // Show a friendly error message if the fetch failed completely
@@ -140,3 +156,48 @@ async function loadBuses() {
 // Call loadBuses() immediately when the page loads.
 // No button click needed — the buses appear as soon as the page opens.
 loadBuses();
+
+// ─────────────────────────────────────────────────────────
+//  Bus Search  (added in Commit 4)
+//  Filters the already-loaded allBuses array as the user
+//  types. No extra API call is made — filtering happens
+//  entirely in the browser using array.filter().
+// ─────────────────────────────────────────────────────────
+
+const searchInput = document.getElementById('searchInput');
+
+// filterBuses()
+// Reads the current value from the search box, filters allBuses,
+// and re-renders the matching cards.
+function filterBuses() {
+  // Get whatever the user typed, remove extra spaces, and convert to lowercase.
+  // toLowerCase() makes the search case-insensitive — "shimla" matches "Shimla".
+  const query = searchInput.value.trim().toLowerCase();
+
+  // If the search box is empty, show all buses and stop
+  if (query === '') {
+    renderBuses(allBuses);
+    return;
+  }
+
+  // array.filter() loops through allBuses and keeps only the buses
+  // where at least one of the three fields contains the search query.
+  // string.includes(query) returns true if the query appears anywhere
+  // inside the string.
+  const results = allBuses.filter(function (bus) {
+    const matchesBusNumber   = bus.busNumber.toLowerCase().includes(query);
+    const matchesSource      = bus.source.toLowerCase().includes(query);
+    const matchesDestination = bus.destination.toLowerCase().includes(query);
+
+    // Keep this bus if any one of the three fields matched
+    return matchesBusNumber || matchesSource || matchesDestination;
+  });
+
+  // Show the matching buses (or "No buses found" if results is empty)
+  renderBuses(results);
+}
+
+// Listen for every keystroke in the search input.
+// 'input' fires each time the value changes — when typing, pasting, or deleting.
+// This makes the search feel instant, with no button to click.
+searchInput.addEventListener('input', filterBuses);

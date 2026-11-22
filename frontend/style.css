@@ -249,3 +249,28 @@ footer {
   display: flex;
   flex-direction: column;
 }
+
+/* ─────────────────────────────────────────
+   Search Box  (added in Commit 4)
+───────────────────────────────────────── */
+
+.search-box {
+  margin-bottom: 20px;
+}
+
+/* The text input field */
+.search-box input {
+  width: 100%;
+  padding: 10px 14px;
+  font-size: 0.97rem;
+  border: 1.5px solid #dde3ec;
+  border-radius: 6px;
+  outline: none;
+  color: #333;
+  background-color: #fff;
+}
+
+/* Highlight the border when the user clicks on the input */
+.search-box input:focus {
+  border-color: #1a73e8;
+}

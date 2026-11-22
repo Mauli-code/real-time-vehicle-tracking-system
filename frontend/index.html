@@ -45,6 +45,16 @@
         This is sample data for demonstration purposes only.
       </p>
 
+      <!-- Search Box (added in Commit 4) -->
+      <!-- The user types here; JavaScript filters the bus list in real time -->
+      <div class="search-box">
+        <input
+          type="text"
+          id="searchInput"
+          placeholder="Search by bus number, source, or destination..."
+        />
+      </div>
+
       <!-- Bus cards will be injected here by JavaScript -->
       <div id="busContainer">
         <p class="loading-msg">Loading buses...</p>
