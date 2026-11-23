@@ -1,0 +1,42 @@
+[
+  {
+    "id": "ROUTE001",
+    "routeName": "Shimla - Manali Highway Route",
+    "source": "Shimla",
+    "destination": "Manali",
+    "stopIds": ["STOP001", "STOP004", "STOP005", "STOP006"],
+    "note": "DEMO DATA — not a verified HRTC schedule"
+  },
+  {
+    "id": "ROUTE002",
+    "routeName": "Shimla - Solan Local Route",
+    "source": "Shimla",
+    "destination": "Solan",
+    "stopIds": ["STOP001", "STOP002"],
+    "note": "DEMO DATA — not a verified HRTC schedule"
+  },
+  {
+    "id": "ROUTE003",
+    "routeName": "Dharamshala - Kangra Valley Route",
+    "source": "Dharamshala",
+    "destination": "Kangra",
+    "stopIds": ["STOP007", "STOP008"],
+    "note": "DEMO DATA — not a verified HRTC schedule"
+  },
+  {
+    "id": "ROUTE004",
+    "routeName": "Mandi - Kullu Beas Valley Route",
+    "source": "Mandi",
+    "destination": "Kullu",
+    "stopIds": ["STOP004", "STOP005"],
+    "note": "DEMO DATA — not a verified HRTC schedule"
+  },
+  {
+    "id": "ROUTE005",
+    "routeName": "Bilaspur - Hamirpur District Route",
+    "source": "Bilaspur",
+    "destination": "Hamirpur",
+    "stopIds": ["STOP003", "STOP010", "STOP009"],
+    "note": "DEMO DATA — not a verified HRTC schedule"
+  }
+]

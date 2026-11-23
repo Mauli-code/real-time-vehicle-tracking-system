@@ -22,6 +22,12 @@ const buses = JSON.parse(fs.readFileSync(busesFilePath, 'utf-8'));
 const stopsFilePath = path.join(__dirname, 'data', 'stops.json');
 const stops = JSON.parse(fs.readFileSync(stopsFilePath, 'utf-8'));
 
+// --- Load Routes Data ---
+// Read routes.json once at startup.
+// Each route has an ordered array of stopIds that link to stops.json.
+const routesFilePath = path.join(__dirname, 'data', 'routes.json');
+const routes = JSON.parse(fs.readFileSync(routesFilePath, 'utf-8'));
+
 // --- Middleware ---
 
 // Serve all files inside the "frontend" folder as static files.
@@ -92,6 +98,81 @@ app.get('/api/stops/:id', (req, res) => {
   }
 
   res.json(stop); // Stop found — send it back as JSON
+});
+
+// --- Routes API ---
+
+// getStopsForRoute(route)
+// A helper function used by both /api/routes/:id and /api/buses/:id/route.
+// Takes a route object and returns the same route but with the full stop
+// objects attached, in the order defined by route.stopIds.
+//
+// route.stopIds is an array like ["STOP001", "STOP004", "STOP006"].
+// array.map() loops through each ID and uses array.find() to look up
+// the matching stop object from the stops array.
+// The result is a new array of full stop objects in travel order.
+function getStopsForRoute(route) {
+  const orderedStops = route.stopIds.map(function (stopId) {
+    return stops.find(function (s) { return s.id === stopId; });
+  });
+
+  // Return the route with a new field "stops" containing the full stop details.
+  // We use Object.assign to copy all existing route fields and add "stops".
+  return Object.assign({}, route, { stops: orderedStops });
+}
+
+// GET /api/routes
+// Returns all routes. Each route includes the full stop details in order.
+app.get('/api/routes', (req, res) => {
+  // Build the enriched version of every route and send the array
+  const enrichedRoutes = routes.map(getStopsForRoute);
+  res.json(enrichedRoutes);
+});
+
+// GET /api/routes/:id
+// Returns one route by ID, with its ordered stop details included.
+//
+// Example: GET /api/routes/ROUTE001  →  Shimla-Manali route with 4 stops
+// Example: GET /api/routes/ROUTE999  →  404 { "error": "Route not found" }
+app.get('/api/routes/:id', (req, res) => {
+  const routeId = req.params.id;
+  const route = routes.find((r) => r.id === routeId);
+
+  if (!route) {
+    return res.status(404).json({ error: 'Route not found' });
+  }
+
+  res.json(getStopsForRoute(route));
+});
+
+// GET /api/buses/:id/route
+// Returns the route that belongs to a specific bus, with ordered stop details.
+// This is a nested route — the bus ID comes first, then /route at the end.
+//
+// Example: GET /api/buses/BUS001/route  →  ROUTE001 with 4 stops
+// Example: GET /api/buses/BUS999/route  →  404 { "error": "Bus not found" }
+// Example: GET /api/buses/BUS001/route  →  404 if bus has no routeId linked
+app.get('/api/buses/:id/route', (req, res) => {
+  const busId = req.params.id;
+  const bus = buses.find((b) => b.id === busId);
+
+  if (!bus) {
+    return res.status(404).json({ error: 'Bus not found' });
+  }
+
+  // Check whether this bus has a routeId field
+  if (!bus.routeId) {
+    return res.status(404).json({ error: 'No route assigned to this bus' });
+  }
+
+  // Look up the route using the bus's routeId
+  const route = routes.find((r) => r.id === bus.routeId);
+
+  if (!route) {
+    return res.status(404).json({ error: 'Route not found for this bus' });
+  }
+
+  res.json(getStopsForRoute(route));
 });
 
 // --- Start the Server ---
