@@ -227,27 +227,89 @@ app.get('/api/buses/:id/route', (req, res) => {
 
 // --- GPS Locations API ---
 
+// buildLocationResponse(location, bus)
+// A helper function used by both location endpoints.
+// Takes a raw location record and its matching bus object, and returns
+// a clean response object that includes busNumber and simulated: true.
+//
+// We use Object.assign() to copy all fields from the location record,
+// then add the extra fields on top. The original location object is
+// not modified.
+function buildLocationResponse(location, bus) {
+  return Object.assign({}, location, {
+    busNumber: bus.busNumber,  // pull busNumber from the matching bus record
+    simulated: true            // clearly flag this as simulated demo data
+  });
+}
+
 // GET /api/locations
 // Returns the simulated GPS location for every bus.
-// Each record contains busId, latitude, longitude, speed, and lastUpdated.
+// Each result includes busId, busNumber, latitude, longitude,
+// speed, lastUpdated, and simulated: true.
 app.get('/api/locations', (req, res) => {
-  res.json(locations);
+  // Use array.map() to loop through every location record.
+  // For each location, find the matching bus and build the enriched response.
+  const enrichedLocations = locations.map(function (location) {
+    const bus = buses.find(function (b) { return b.id === location.busId; });
+
+    // If no matching bus is found (data inconsistency), skip gracefully
+    if (!bus) {
+      return location; // return the raw record as-is
+    }
+
+    return buildLocationResponse(location, bus);
+  });
+
+  res.json(enrichedLocations);
 });
 
 // GET /api/locations/:busId
-// Returns the GPS location for one specific bus.
+// Returns the simulated GPS location for one specific bus.
+// Includes busNumber and simulated: true in the response.
 //
-// Example: GET /api/locations/BUS001  →  location record for BUS001
+// Example: GET /api/locations/BUS001  →  enriched location for BUS001
 // Example: GET /api/locations/BUS999  →  404 { "error": "Location not found" }
 app.get('/api/locations/:busId', (req, res) => {
-  const busId = req.params.busId;
+  const busId   = req.params.busId;
   const location = locations.find((loc) => loc.busId === busId);
 
   if (!location) {
     return res.status(404).json({ error: 'Location not found for this bus' });
   }
 
-  res.json(location);
+  // Find the matching bus to get its busNumber
+  const bus = buses.find((b) => b.id === busId);
+
+  if (!bus) {
+    return res.status(404).json({ error: 'Bus not found' });
+  }
+
+  res.json(buildLocationResponse(location, bus));
+});
+
+// GET /api/buses/:id/location
+// Returns the simulated GPS location of a specific bus.
+// This is the bus-centric version of GET /api/locations/:busId.
+// The URL pattern matches how we already have /api/buses/:id/route.
+//
+// Example: GET /api/buses/BUS001/location  →  enriched location for BUS001
+// Example: GET /api/buses/BUS999/location  →  404 { "error": "Bus not found" }
+app.get('/api/buses/:id/location', (req, res) => {
+  const busId = req.params.id;
+
+  // Step 1: check the bus exists
+  const bus = buses.find((b) => b.id === busId);
+  if (!bus) {
+    return res.status(404).json({ error: 'Bus not found' });
+  }
+
+  // Step 2: find the location record for this bus
+  const location = locations.find((loc) => loc.busId === busId);
+  if (!location) {
+    return res.status(404).json({ error: 'No location data found for this bus' });
+  }
+
+  res.json(buildLocationResponse(location, bus));
 });
 
 // --- Start the Server ---
