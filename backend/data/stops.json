@@ -1,0 +1,82 @@
+[
+  {
+    "id": "STOP001",
+    "name": "Shimla Bus Stand",
+    "city": "Shimla",
+    "latitude": 31.1048,
+    "longitude": 77.1734,
+    "note": "DEMO DATA"
+  },
+  {
+    "id": "STOP002",
+    "name": "Solan Bus Stand",
+    "city": "Solan",
+    "latitude": 30.9045,
+    "longitude": 77.0967,
+    "note": "DEMO DATA"
+  },
+  {
+    "id": "STOP003",
+    "name": "Bilaspur Bus Stand",
+    "city": "Bilaspur",
+    "latitude": 31.3391,
+    "longitude": 76.7604,
+    "note": "DEMO DATA"
+  },
+  {
+    "id": "STOP004",
+    "name": "Mandi Bus Stand",
+    "city": "Mandi",
+    "latitude": 31.7085,
+    "longitude": 76.9319,
+    "note": "DEMO DATA"
+  },
+  {
+    "id": "STOP005",
+    "name": "Kullu Bus Stand",
+    "city": "Kullu",
+    "latitude": 31.9579,
+    "longitude": 77.1095,
+    "note": "DEMO DATA"
+  },
+  {
+    "id": "STOP006",
+    "name": "Manali Bus Stand",
+    "city": "Manali",
+    "latitude": 32.2396,
+    "longitude": 77.1887,
+    "note": "DEMO DATA"
+  },
+  {
+    "id": "STOP007",
+    "name": "Dharamshala Bus Stand",
+    "city": "Dharamshala",
+    "latitude": 32.2190,
+    "longitude": 76.3234,
+    "note": "DEMO DATA"
+  },
+  {
+    "id": "STOP008",
+    "name": "Kangra Bus Stand",
+    "city": "Kangra",
+    "latitude": 32.0998,
+    "longitude": 76.2691,
+    "note": "DEMO DATA"
+  },
+  {
+    "id": "STOP009",
+    "name": "Hamirpur Bus Stand",
+    "city": "Hamirpur",
+    "latitude": 31.6862,
+    "longitude": 76.5214,
+    "note": "DEMO DATA"
+  },
+  {
+    "id": "STOP010",
+    "name": "Una Bus Stand",
+    "city": "Una",
+    "latitude": 31.4685,
+    "longitude": 76.2694,
+    "note": "DEMO DATA"
+  }
+]

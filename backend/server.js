@@ -17,6 +17,11 @@ const PORT = 3000;     // The port the server will listen on
 const busesFilePath = path.join(__dirname, 'data', 'buses.json');
 const buses = JSON.parse(fs.readFileSync(busesFilePath, 'utf-8'));
 
+// --- Load Bus Stops Data ---
+// Same approach as buses — read stops.json once at startup and keep it in memory.
+const stopsFilePath = path.join(__dirname, 'data', 'stops.json');
+const stops = JSON.parse(fs.readFileSync(stopsFilePath, 'utf-8'));
+
 // --- Middleware ---
 
 // Serve all files inside the "frontend" folder as static files.
@@ -61,6 +66,32 @@ app.get('/api/buses/:id', (req, res) => {
   }
 
   res.json(bus); // Bus found — send it back as JSON
+});
+
+// --- Bus Stops API Routes ---
+
+// GET /api/stops
+// Returns the full list of all bus stops as a JSON array.
+// Example response: [ { "id": "STOP001", "name": "Shimla Bus Stand", ... }, ... ]
+app.get('/api/stops', (req, res) => {
+  res.json(stops);
+});
+
+// GET /api/stops/:id
+// Returns a single bus stop whose id matches the value in the URL.
+//
+// Example: GET /api/stops/STOP001  →  returns Shimla Bus Stand
+// Example: GET /api/stops/STOP999  →  returns 404 { "error": "Stop not found" }
+app.get('/api/stops/:id', (req, res) => {
+  const stopId = req.params.id;                            // Read the id from the URL
+  const stop = stops.find((s) => s.id === stopId);         // Search the array for a match
+
+  if (!stop) {
+    // No stop matched — send a 404 (Not Found) status with an error message
+    return res.status(404).json({ error: 'Stop not found' });
+  }
+
+  res.json(stop); // Stop found — send it back as JSON
 });
 
 // --- Start the Server ---
