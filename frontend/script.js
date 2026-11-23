@@ -161,44 +161,13 @@ async function loadBuses() {
 loadBuses();
 
 // ─────────────────────────────────────────────────────────
-//  Bus Search  (added in Commit 4)
+//  Bus Search  (added in Commit 4, unified in Commit 5)
 //  Filters the already-loaded allBuses array as the user
 //  types. No extra API call is made — filtering happens
 //  entirely in the browser using array.filter().
 // ─────────────────────────────────────────────────────────
 
 const searchInput = document.getElementById('searchInput');
-
-// filterBuses()
-// Reads the current value from the search box, filters allBuses,
-// and re-renders the matching cards.
-function applyFilters() {
-  // Get whatever the user typed, remove extra spaces, and convert to lowercase.
-  // toLowerCase() makes the search case-insensitive — "shimla" matches "Shimla".
-  const query = searchInput.value.trim().toLowerCase();
-
-  // If the search box is empty, show all buses and stop
-  if (query === '') {
-    renderBuses(allBuses);
-    return;
-  }
-
-  // array.filter() loops through allBuses and keeps only the buses
-  // where at least one of the three fields contains the search query.
-  // string.includes(query) returns true if the query appears anywhere
-  // inside the string.
-  const results = allBuses.filter(function (bus) {
-    const matchesBusNumber   = bus.busNumber.toLowerCase().includes(query);
-    const matchesSource      = bus.source.toLowerCase().includes(query);
-    const matchesDestination = bus.destination.toLowerCase().includes(query);
-
-    // Keep this bus if any one of the three fields matched
-    return matchesBusNumber || matchesSource || matchesDestination;
-  });
-
-  // Show the matching buses (or "No buses found" if results is empty)
-  renderBuses(results);
-}
 
 // Listen for every keystroke in the search input.
 // 'input' fires each time the value changes — when typing, pasting, or deleting.

@@ -8,46 +8,83 @@
 </head>
 <body>
 
-  <header>
+  <!-- ═══════════════════════════════════════
+       NAV BAR
+       A thin top bar with the project name
+       and a small "College Project" label.
+  ════════════════════════════════════════ -->
+  <nav class="navbar">
+    <span class="nav-logo">🚌 RTVTS</span>
+    <span class="nav-title">Real-Time Vehicle Tracking System</span>
+    <span class="nav-badge">College Project</span>
+  </nav>
+
+  <!-- ═══════════════════════════════════════
+       HERO SECTION
+       Large heading + short description
+       about Himachal Pradesh bus tracking.
+  ════════════════════════════════════════ -->
+  <header class="hero">
     <h1>Real-Time Vehicle Tracking System</h1>
-    <p class="tagline">Tracking buses across Himachal Pradesh — live and in real time</p>
+    <p class="hero-desc">
+      Track government buses across Himachal Pradesh — live routes, availability,
+      fuel type, and emission standards, all in one place.
+    </p>
   </header>
 
-  <main>
+  <!-- ═══════════════════════════════════════
+       STATS BAR
+       Three quick-glance numbers shown
+       below the hero. Values are static for
+       now — they will become dynamic in a
+       later commit.
+  ════════════════════════════════════════ -->
+  <div class="stats-bar">
+    <div class="stat-item">
+      <span class="stat-number">5</span>
+      <span class="stat-label">Sample Buses</span>
+    </div>
+    <div class="stat-item">
+      <span class="stat-number">5</span>
+      <span class="stat-label">HP Districts</span>
+    </div>
+    <div class="stat-item">
+      <span class="stat-number">3</span>
+      <span class="stat-label">Fuel Types</span>
+    </div>
+  </div>
 
-    <section class="about card">
-      <h2>About This Project</h2>
-      <p>
-        This system tracks the real-time location of government buses operating
-        across the districts of Himachal Pradesh. Passengers can view live bus
-        positions, estimated arrival times, and route information — all from
-        their browser, without installing any app.
-      </p>
-      <p>
-        Built as a college project using <strong>Node.js</strong>,
-        <strong>Express.js</strong>, and vanilla <strong>JavaScript</strong>.
-      </p>
+  <!-- ═══════════════════════════════════════
+       MAIN CONTENT
+  ════════════════════════════════════════ -->
+  <main class="main-content">
+
+    <!-- ── Server Status Card ── -->
+    <section class="card status-card">
+      <div class="card-header">
+        <h2>⚙️ Server Status</h2>
+      </div>
+      <p>Click to confirm the backend Express server is running.</p>
+      <button id="checkBtn" class="btn-primary">Check Server Health</button>
+      <p id="statusResult" class="status-result"></p>
     </section>
 
-    <section class="status card">
-      <h2>Server Status</h2>
-      <p>Click the button below to check whether the backend server is running.</p>
-      <button id="checkBtn">Check Server Health</button>
-      <p id="statusResult"></p>
-    </section>
+    <!-- ── Bus Tracking Dashboard ── -->
+    <section class="card dashboard-card">
 
-    <!-- Bus List Section -->
-    <!-- This section is populated automatically by script.js when the page loads -->
-    <section class="bus-list-section">
-      <h2>Available Buses <span class="demo-badge">Demo Data</span></h2>
-      <p class="bus-list-note">
-        The buses below are loaded from the backend API (<code>/api/buses</code>).
-        This is sample data for demonstration purposes only.
+      <div class="card-header">
+        <h2>🚌 Bus Tracking Dashboard</h2>
+        <span class="demo-badge">Demo Data</span>
+      </div>
+
+      <p class="dashboard-note">
+        Bus data is loaded from <code>/api/buses</code>.
+        This is sample data for demonstration only.
       </p>
 
-      <!-- Search Box (added in Commit 4) -->
-      <!-- The user types here; JavaScript filters the bus list in real time -->
+      <!-- Search Box -->
       <div class="search-box">
+        <span class="search-icon">🔍</span>
         <input
           type="text"
           id="searchInput"
@@ -55,8 +92,7 @@
         />
       </div>
 
-      <!-- Dropdown Filters (added in Commit 5) -->
-      <!-- Source and destination dropdowns, populated from bus data by script.js -->
+      <!-- Dropdown Filters -->
       <div class="filter-row">
 
         <div class="filter-group">
@@ -73,20 +109,27 @@
           </select>
         </div>
 
-        <button id="resetBtn" class="reset-btn">Reset Filters</button>
+        <button id="resetBtn" class="btn-reset">↺ Reset Filters</button>
 
       </div>
 
-      <!-- Bus cards will be injected here by JavaScript -->
+      <!-- Bus cards injected here by script.js -->
       <div id="busContainer">
         <p class="loading-msg">Loading buses...</p>
       </div>
+
     </section>
 
   </main>
 
-  <footer>
-    <p>Real-Time Vehicle Tracking System &mdash; College Project</p>
+  <!-- ═══════════════════════════════════════
+       FOOTER
+  ════════════════════════════════════════ -->
+  <footer class="footer">
+    <p>
+      Real-Time Vehicle Tracking System &mdash; College Project &mdash;
+      Built with Node.js &amp; Express.js
+    </p>
   </footer>
 
   <script src="script.js"></script>
