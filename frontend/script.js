@@ -101,6 +101,11 @@ function buildBusCard(bus) {
 
       </div>
 
+      <!-- View Route button — passes the bus ID to showRoute() when clicked -->
+      <button class="btn-view-route" onclick="showRoute('${bus.id}')">
+        🗺 View Route
+      </button>
+
     </div>
   `;
 }
@@ -290,3 +295,96 @@ function resetFilters() {
 }
 
 resetBtn.addEventListener('click', resetFilters);
+
+// ─────────────────────────────────────────────────────────
+//  Route Details Panel  (added in Commit 9)
+//
+//  showRoute(busId)  — called when "View Route" is clicked.
+//    Fetches GET /api/buses/:id/route and renders the stop list.
+//
+//  closeRoute()      — called when "Close" is clicked.
+//    Hides the panel.
+// ─────────────────────────────────────────────────────────
+
+// Get references to the three panel elements
+const routePanel        = document.getElementById('routePanel');
+const routePanelTitle   = document.getElementById('routePanelTitle');
+const routePanelContent = document.getElementById('routePanelContent');
+const closeRouteBtn     = document.getElementById('closeRouteBtn');
+
+// closeRoute()
+// Hides the route panel by adding the "hidden" CSS class back.
+function closeRoute() {
+  routePanel.classList.add('hidden');
+  routePanelContent.innerHTML = ''; // clear old content
+}
+
+// Wire the Close button
+closeRouteBtn.addEventListener('click', closeRoute);
+
+// showRoute(busId)
+// Fetches the route for the given bus ID and displays it in the panel.
+// This is an async function so we can use await inside it.
+async function showRoute(busId) {
+
+  // 1. Show the panel immediately with a loading message
+  routePanelTitle.textContent = 'Route Details';
+  routePanelContent.innerHTML = '<p class="route-loading">Loading route...</p>';
+  routePanel.classList.remove('hidden'); // make the panel visible
+
+  // 2. Scroll the panel into view so the user sees it without scrolling manually
+  routePanel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+  try {
+    // 3. Fetch the route from our Express API
+    //    The URL uses the busId passed in — e.g. /api/buses/BUS001/route
+    const response = await fetch('/api/buses/' + busId + '/route');
+
+    // 4. If the server returns an error status (e.g. 404), handle it
+    if (!response.ok) {
+      routePanelContent.innerHTML =
+        '<p class="route-error">❌ No route found for this bus.</p>';
+      return;
+    }
+
+    // 5. Parse the JSON response into a JavaScript object
+    const route = await response.json();
+
+    // 6. Update the panel title with the route name
+    routePanelTitle.textContent = '🗺 ' + route.routeName;
+
+    // 7. Build the route summary line: Source → Destination + demo badge
+    const summaryHTML =
+      '<div class="route-summary">' +
+        route.source +
+        '<span class="arrow"> → </span>' +
+        route.destination +
+        '<span class="demo-badge">Demo Data</span>' +
+      '</div>';
+
+    // 8. Build the ordered stop list
+    //    route.stops is an array of stop objects in travel order.
+    //    We loop through them with forEach and build an <li> for each one.
+    let stopsHTML = '<ul class="stop-list">';
+
+    route.stops.forEach(function (stop, index) {
+      // index starts at 0, so we add 1 to get a human-readable stop number
+      stopsHTML +=
+        '<li class="stop-item">' +
+          '<span class="stop-number">' + (index + 1) + '</span>' +
+          '<span class="stop-name">' + stop.name + '</span>' +
+          '<span class="stop-city">' + stop.city + '</span>' +
+        '</li>';
+    });
+
+    stopsHTML += '</ul>';
+
+    // 9. Inject the summary and stop list into the panel
+    routePanelContent.innerHTML = summaryHTML + stopsHTML;
+
+  } catch (error) {
+    // This block runs if the fetch itself failed (server not running, network error)
+    routePanelContent.innerHTML =
+      '<p class="route-error">❌ Could not load route. Make sure the server is running.</p>';
+  }
+}

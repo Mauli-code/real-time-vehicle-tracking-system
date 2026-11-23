@@ -510,3 +510,152 @@ body {
     grid-template-columns: 1fr;
   }
 }
+
+/* ── 17. View Route button (added in Commit 9) ───────────── */
+
+/* Small button at the bottom of each bus card */
+.btn-view-route {
+  background-color: var(--blue-light);
+  color: var(--blue);
+  border: 1px solid var(--blue);
+  padding: 6px 14px;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  width: 100%;
+  margin-top: 4px;
+}
+
+.btn-view-route:hover {
+  background-color: var(--blue);
+  color: var(--white);
+}
+
+/* ── 18. Route details panel (added in Commit 9) ─────────── */
+
+/* The panel sits below the bus grid inside the dashboard card */
+.route-panel {
+  margin-top: 24px;
+  border: 1.5px solid var(--blue);
+  border-radius: 10px;
+  padding: 20px 24px;
+  background-color: #f5f8ff;
+}
+
+/* hidden utility class — toggled by JavaScript */
+.hidden {
+  display: none;
+}
+
+/* Header row: title on the left, close button on the right */
+.route-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.route-panel-header h3 {
+  font-size: 1rem;
+  color: var(--blue);
+}
+
+/* Close button — plain text style */
+.btn-close {
+  background: none;
+  border: 1px solid var(--grey-border);
+  color: var(--grey-text);
+  padding: 4px 12px;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.btn-close:hover {
+  background-color: var(--red-bg);
+  color: var(--red);
+  border-color: var(--red);
+}
+
+/* Route summary row: source → destination + demo badge */
+.route-summary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #222;
+}
+
+.route-summary .arrow {
+  color: var(--blue);
+}
+
+/* Stop list */
+.stop-list {
+  list-style: none;   /* remove default bullet points */
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.stop-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  background-color: var(--white);
+  border: 1px solid var(--grey-border);
+  border-radius: 8px;
+  font-size: 0.92rem;
+}
+
+/* Circular stop number badge */
+.stop-number {
+  width: 26px;
+  height: 26px;
+  background-color: var(--blue);
+  color: var(--white);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.78rem;
+  font-weight: bold;
+  flex-shrink: 0;   /* prevents it from shrinking on small screens */
+}
+
+.stop-name {
+  font-weight: 600;
+  color: #333;
+}
+
+.stop-city {
+  font-size: 0.82rem;
+  color: var(--grey-text);
+  margin-left: auto;  /* pushes the city label to the right */
+}
+
+/* Route panel loading / error states */
+.route-loading,
+.route-error {
+  font-size: 0.95rem;
+  padding: 8px 0;
+  text-align: center;
+}
+
+.route-loading { color: var(--grey-text); }
+.route-error   { color: var(--red);       }
+
+@media (max-width: 600px) {
+  .route-panel {
+    padding: 16px;
+  }
+
+  .stop-city {
+    display: none;   /* hide coordinates column on very small screens */
+  }
+}

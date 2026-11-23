@@ -118,6 +118,20 @@
         <p class="loading-msg">Loading buses...</p>
       </div>
 
+      <!-- Route Details Panel (added in Commit 9) -->
+      <!-- Hidden by default. script.js shows it when "View Route" is clicked. -->
+      <div id="routePanel" class="route-panel hidden">
+
+        <div class="route-panel-header">
+          <h3 id="routePanelTitle">Route Details</h3>
+          <button id="closeRouteBtn" class="btn-close">✕ Close</button>
+        </div>
+
+        <!-- Route info and stop list are injected here by script.js -->
+        <div id="routePanelContent"></div>
+
+      </div>
+
     </section>
 
   </main>
