@@ -146,6 +146,9 @@ async function loadBuses() {
     // Show all buses when the page first loads
     renderBuses(allBuses);
 
+    // Fill the source and destination dropdowns with values from the loaded data
+    populateDropdowns();
+
   } catch (error) {
     // Show a friendly error message if the fetch failed completely
     busContainer.innerHTML =
@@ -169,7 +172,7 @@ const searchInput = document.getElementById('searchInput');
 // filterBuses()
 // Reads the current value from the search box, filters allBuses,
 // and re-renders the matching cards.
-function filterBuses() {
+function applyFilters() {
   // Get whatever the user typed, remove extra spaces, and convert to lowercase.
   // toLowerCase() makes the search case-insensitive — "shimla" matches "Shimla".
   const query = searchInput.value.trim().toLowerCase();
@@ -200,4 +203,121 @@ function filterBuses() {
 // Listen for every keystroke in the search input.
 // 'input' fires each time the value changes — when typing, pasting, or deleting.
 // This makes the search feel instant, with no button to click.
-searchInput.addEventListener('input', filterBuses);
+searchInput.addEventListener('input', applyFilters);
+
+// ─────────────────────────────────────────────────────────
+//  Dropdown Filters  (added in Commit 5)
+//  Two <select> dropdowns let the user filter by source
+//  and/or destination. They work together with the search
+//  box — all three controls are read at the same time
+//  inside applyFilters().
+// ─────────────────────────────────────────────────────────
+
+const sourceFilter      = document.getElementById('sourceFilter');
+const destinationFilter = document.getElementById('destinationFilter');
+const resetBtn          = document.getElementById('resetBtn');
+
+// populateDropdowns()
+// Reads the allBuses array and fills the two <select> elements
+// with one <option> per unique source / destination value.
+// Called once after loadBuses() finishes fetching the data.
+function populateDropdowns() {
+
+  // Collect every unique source value from allBuses.
+  // We use an array and only push a value if it is not already in the array.
+  const sources = [];
+  allBuses.forEach(function (bus) {
+    if (!sources.includes(bus.source)) {
+      sources.push(bus.source);
+    }
+  });
+
+  // Collect every unique destination value the same way
+  const destinations = [];
+  allBuses.forEach(function (bus) {
+    if (!destinations.includes(bus.destination)) {
+      destinations.push(bus.destination);
+    }
+  });
+
+  // Add one <option> element to the source dropdown for each unique source.
+  // The "All Sources" option is already in the HTML, so we only add the rest.
+  sources.forEach(function (source) {
+    const option = document.createElement('option'); // create a new <option> tag
+    option.value = source;                           // the value sent when selected
+    option.textContent = source;                     // the text the user sees
+    sourceFilter.appendChild(option);               // add it to the <select>
+  });
+
+  // Do the same for destinations
+  destinations.forEach(function (destination) {
+    const option = document.createElement('option');
+    option.value = destination;
+    option.textContent = destination;
+    destinationFilter.appendChild(option);
+  });
+}
+
+// applyFilters()
+// Reads the search box, source dropdown, and destination dropdown
+// all at once, then filters allBuses to find buses that match
+// every active filter simultaneously.
+//
+// This replaces the old filterBuses() from Commit 4 — same idea,
+// but now it checks three controls instead of one.
+function applyFilters() {
+  const query       = searchInput.value.trim().toLowerCase(); // text search
+  const srcValue    = sourceFilter.value;                     // selected source ("" means All)
+  const destValue   = destinationFilter.value;                // selected destination
+
+  const results = allBuses.filter(function (bus) {
+
+    // --- Search box check ---
+    // If the query is not empty, the bus must match in at least one field.
+    // If the query is empty, this check is skipped (always true).
+    let matchesSearch = true;
+    if (query !== '') {
+      matchesSearch =
+        bus.busNumber.toLowerCase().includes(query)   ||
+        bus.source.toLowerCase().includes(query)      ||
+        bus.destination.toLowerCase().includes(query);
+    }
+
+    // --- Source dropdown check ---
+    // If a source is selected, the bus's source must equal it exactly.
+    // If "All Sources" is selected, srcValue is "" so this is always true.
+    let matchesSource = true;
+    if (srcValue !== '') {
+      matchesSource = (bus.source === srcValue);
+    }
+
+    // --- Destination dropdown check ---
+    // Same logic as source.
+    let matchesDestination = true;
+    if (destValue !== '') {
+      matchesDestination = (bus.destination === destValue);
+    }
+
+    // Keep this bus only if ALL three checks passed
+    return matchesSearch && matchesSource && matchesDestination;
+  });
+
+  renderBuses(results);
+}
+
+// Wire the dropdowns to applyFilters so the list updates the moment
+// the user picks a different option.
+sourceFilter.addEventListener('change', applyFilters);
+destinationFilter.addEventListener('change', applyFilters);
+
+// resetFilters()
+// Clears the search box and resets both dropdowns to their default
+// "All" option, then shows every bus.
+function resetFilters() {
+  searchInput.value       = '';  // clear the text input
+  sourceFilter.value      = '';  // reset to "All Sources"
+  destinationFilter.value = '';  // reset to "All Destinations"
+  renderBuses(allBuses);         // show all buses
+}
+
+resetBtn.addEventListener('click', resetFilters);

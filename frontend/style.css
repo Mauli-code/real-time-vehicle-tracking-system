@@ -274,3 +274,67 @@ footer {
 .search-box input:focus {
   border-color: #1a73e8;
 }
+
+/* ─────────────────────────────────────────
+   Dropdown Filters  (added in Commit 5)
+───────────────────────────────────────── */
+
+/* Row that holds both dropdowns and the reset button side by side */
+.filter-row {
+  display: flex;
+  flex-wrap: wrap;       /* wraps to next line on small screens */
+  gap: 12px;
+  align-items: flex-end; /* align button with the bottom of the dropdowns */
+  margin-bottom: 20px;
+}
+
+/* Each label + select pair */
+.filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;               /* each group grows equally to share available width */
+  min-width: 140px;      /* prevents them from becoming too narrow */
+}
+
+.filter-group label {
+  font-size: 0.82rem;
+  color: #666;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+/* The <select> dropdown */
+.filter-group select {
+  width: 100%;
+  padding: 9px 12px;
+  font-size: 0.95rem;
+  border: 1.5px solid #dde3ec;
+  border-radius: 6px;
+  background-color: #fff;
+  color: #333;
+  outline: none;
+  cursor: pointer;
+}
+
+.filter-group select:focus {
+  border-color: #1a73e8;
+}
+
+/* Reset button — lighter style so it does not compete with the health check button */
+.reset-btn {
+  background-color: #fff;
+  color: #1a73e8;
+  border: 1.5px solid #1a73e8;
+  padding: 9px 18px;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  cursor: pointer;
+  margin-top: 0;         /* override the global button margin-top */
+  white-space: nowrap;
+}
+
+.reset-btn:hover {
+  background-color: #e8f0fe;
+}

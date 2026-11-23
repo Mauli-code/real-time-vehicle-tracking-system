@@ -55,6 +55,28 @@
         />
       </div>
 
+      <!-- Dropdown Filters (added in Commit 5) -->
+      <!-- Source and destination dropdowns, populated from bus data by script.js -->
+      <div class="filter-row">
+
+        <div class="filter-group">
+          <label for="sourceFilter">Source</label>
+          <select id="sourceFilter">
+            <option value="">All Sources</option>
+          </select>
+        </div>
+
+        <div class="filter-group">
+          <label for="destinationFilter">Destination</label>
+          <select id="destinationFilter">
+            <option value="">All Destinations</option>
+          </select>
+        </div>
+
+        <button id="resetBtn" class="reset-btn">Reset Filters</button>
+
+      </div>
+
       <!-- Bus cards will be injected here by JavaScript -->
       <div id="busContainer">
         <p class="loading-msg">Loading buses...</p>
