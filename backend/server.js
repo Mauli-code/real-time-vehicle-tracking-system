@@ -28,6 +28,56 @@ const stops = JSON.parse(fs.readFileSync(stopsFilePath, 'utf-8'));
 const routesFilePath = path.join(__dirname, 'data', 'routes.json');
 const routes = JSON.parse(fs.readFileSync(routesFilePath, 'utf-8'));
 
+// --- Load & Validate GPS Location Data ---
+// Read locations.json once at startup and store in memory.
+const locationsFilePath = path.join(__dirname, 'data', 'locations.json');
+const locations = JSON.parse(fs.readFileSync(locationsFilePath, 'utf-8'));
+
+// validateLocations(locations, buses)
+// Runs simple checks on the locations array when the server starts.
+// If any record is invalid, a warning is printed to the console.
+// The server still starts — invalid records are logged, not crashed on.
+function validateLocations(locationList, busList) {
+  const seenBusIds = []; // track bus IDs we have already seen (for duplicate check)
+
+  locationList.forEach(function (loc, index) {
+    const label = 'locations.json[' + index + '] (busId: ' + loc.busId + ')';
+
+    // Check 1: busId must match an existing bus
+    const busExists = busList.find(function (b) { return b.id === loc.busId; });
+    if (!busExists) {
+      console.warn('⚠ WARNING ' + label + ' — busId does not match any bus in buses.json');
+    }
+
+    // Check 2: latitude must be between -90 and 90
+    if (typeof loc.latitude !== 'number' || loc.latitude < -90 || loc.latitude > 90) {
+      console.warn('⚠ WARNING ' + label + ' — invalid latitude: ' + loc.latitude);
+    }
+
+    // Check 3: longitude must be between -180 and 180
+    if (typeof loc.longitude !== 'number' || loc.longitude < -180 || loc.longitude > 180) {
+      console.warn('⚠ WARNING ' + label + ' — invalid longitude: ' + loc.longitude);
+    }
+
+    // Check 4: speed must be a non-negative number
+    if (typeof loc.speed !== 'number' || loc.speed < 0) {
+      console.warn('⚠ WARNING ' + label + ' — invalid speed: ' + loc.speed);
+    }
+
+    // Check 5: no duplicate busId entries
+    if (seenBusIds.includes(loc.busId)) {
+      console.warn('⚠ WARNING ' + label + ' — duplicate busId found');
+    } else {
+      seenBusIds.push(loc.busId);
+    }
+  });
+
+  console.log('✔ Location data validation complete (' + locationList.length + ' records checked)');
+}
+
+// Run validation immediately when the server starts
+validateLocations(locations, buses);
+
 // --- Middleware ---
 
 // Serve all files inside the "frontend" folder as static files.
@@ -173,6 +223,31 @@ app.get('/api/buses/:id/route', (req, res) => {
   }
 
   res.json(getStopsForRoute(route));
+});
+
+// --- GPS Locations API ---
+
+// GET /api/locations
+// Returns the simulated GPS location for every bus.
+// Each record contains busId, latitude, longitude, speed, and lastUpdated.
+app.get('/api/locations', (req, res) => {
+  res.json(locations);
+});
+
+// GET /api/locations/:busId
+// Returns the GPS location for one specific bus.
+//
+// Example: GET /api/locations/BUS001  →  location record for BUS001
+// Example: GET /api/locations/BUS999  →  404 { "error": "Location not found" }
+app.get('/api/locations/:busId', (req, res) => {
+  const busId = req.params.busId;
+  const location = locations.find((loc) => loc.busId === busId);
+
+  if (!location) {
+    return res.status(404).json({ error: 'Location not found for this bus' });
+  }
+
+  res.json(location);
 });
 
 // --- Start the Server ---
