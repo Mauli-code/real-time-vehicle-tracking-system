@@ -33,6 +33,11 @@ const routes = JSON.parse(fs.readFileSync(routesFilePath, 'utf-8'));
 const locationsFilePath = path.join(__dirname, 'data', 'locations.json');
 const locations = JSON.parse(fs.readFileSync(locationsFilePath, 'utf-8'));
 
+// --- Load Simulation Module ---
+// simulation.js handles bus movement logic.
+// It is a separate module loaded with require() — same as Express.
+const simulation = require('./simulation');
+
 // validateLocations(locations, buses)
 // Runs simple checks on the locations array when the server starts.
 // If any record is invalid, a warning is printed to the console.
@@ -246,17 +251,15 @@ function buildLocationResponse(location, bus) {
 // Returns the simulated GPS location for every bus.
 // Each result includes busId, busNumber, latitude, longitude,
 // speed, lastUpdated, and simulated: true.
+// Reads locations.json fresh each time so simulation updates are reflected.
 app.get('/api/locations', (req, res) => {
-  // Use array.map() to loop through every location record.
-  // For each location, find the matching bus and build the enriched response.
-  const enrichedLocations = locations.map(function (location) {
+  const freshLocations = JSON.parse(fs.readFileSync(locationsFilePath, 'utf-8'));
+
+  const enrichedLocations = freshLocations.map(function (location) {
     const bus = buses.find(function (b) { return b.id === location.busId; });
-
-    // If no matching bus is found (data inconsistency), skip gracefully
     if (!bus) {
-      return location; // return the raw record as-is
+      return location;
     }
-
     return buildLocationResponse(location, bus);
   });
 
@@ -265,21 +268,17 @@ app.get('/api/locations', (req, res) => {
 
 // GET /api/locations/:busId
 // Returns the simulated GPS location for one specific bus.
-// Includes busNumber and simulated: true in the response.
-//
-// Example: GET /api/locations/BUS001  →  enriched location for BUS001
-// Example: GET /api/locations/BUS999  →  404 { "error": "Location not found" }
+// Reads locations.json fresh each time so simulation updates are reflected.
 app.get('/api/locations/:busId', (req, res) => {
-  const busId   = req.params.busId;
-  const location = locations.find((loc) => loc.busId === busId);
+  const busId          = req.params.busId;
+  const freshLocations = JSON.parse(fs.readFileSync(locationsFilePath, 'utf-8'));
+  const location       = freshLocations.find((loc) => loc.busId === busId);
 
   if (!location) {
     return res.status(404).json({ error: 'Location not found for this bus' });
   }
 
-  // Find the matching bus to get its busNumber
   const bus = buses.find((b) => b.id === busId);
-
   if (!bus) {
     return res.status(404).json({ error: 'Bus not found' });
   }
@@ -289,27 +288,59 @@ app.get('/api/locations/:busId', (req, res) => {
 
 // GET /api/buses/:id/location
 // Returns the simulated GPS location of a specific bus.
-// This is the bus-centric version of GET /api/locations/:busId.
-// The URL pattern matches how we already have /api/buses/:id/route.
-//
-// Example: GET /api/buses/BUS001/location  →  enriched location for BUS001
-// Example: GET /api/buses/BUS999/location  →  404 { "error": "Bus not found" }
+// Reads locations.json fresh each time so simulation updates are reflected.
 app.get('/api/buses/:id/location', (req, res) => {
   const busId = req.params.id;
 
-  // Step 1: check the bus exists
   const bus = buses.find((b) => b.id === busId);
   if (!bus) {
     return res.status(404).json({ error: 'Bus not found' });
   }
 
-  // Step 2: find the location record for this bus
-  const location = locations.find((loc) => loc.busId === busId);
+  const freshLocations = JSON.parse(fs.readFileSync(locationsFilePath, 'utf-8'));
+  const location       = freshLocations.find((loc) => loc.busId === busId);
   if (!location) {
     return res.status(404).json({ error: 'No location data found for this bus' });
   }
 
   res.json(buildLocationResponse(location, bus));
+});
+
+// --- Simulation API ---
+
+// POST /api/simulate/:busId
+// Moves a single bus one step along its route.
+// Returns the movement result — previous and new coordinates.
+//
+// Example: POST /api/simulate/BUS001
+// Use POST (not GET) because this action changes data on the server.
+app.post('/api/simulate/:busId', (req, res) => {
+  const busId = req.params.busId;
+
+  // Call moveBus() from simulation.js
+  const result = simulation.moveBus(busId);
+
+  if (!result) {
+    return res.status(404).json({ error: 'Could not simulate movement for bus: ' + busId });
+  }
+
+  // Reload the locations data so subsequent GET /api/locations calls
+  // return the updated coordinates written by simulation.js
+  simulation.reloadData();
+
+  res.json(result);
+});
+
+// POST /api/simulate
+// Moves ALL buses one step along their routes.
+// Returns an array of movement results.
+app.post('/api/simulate', (req, res) => {
+  const results = simulation.runAllBuses();
+
+  // Reload data so GET /api/locations reflects the new positions
+  simulation.reloadData();
+
+  res.json(results);
 });
 
 // --- Start the Server ---
