@@ -531,6 +531,24 @@ body {
   color: var(--white);
 }
 
+/* View Location button — green tint to distinguish from View Route */
+.btn-view-location {
+  background-color: var(--green-bg);
+  color: var(--green);
+  border: 1px solid var(--green);
+  padding: 6px 14px;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  width: 100%;
+  margin-top: 6px;
+}
+
+.btn-view-location:hover {
+  background-color: var(--green);
+  color: var(--white);
+}
+
 /* ── 18. Route details panel (added in Commit 9) ─────────── */
 
 /* The panel sits below the bus grid inside the dashboard card */
@@ -657,5 +675,94 @@ body {
 
   .stop-city {
     display: none;   /* hide coordinates column on very small screens */
+  }
+}
+
+/* ── 19. Location Panel  (added in Commit 12) ────────────── */
+
+/* Sits below the route panel inside the dashboard card */
+.location-panel {
+  margin-top: 24px;
+  border: 1.5px solid var(--green);
+  border-radius: 10px;
+  padding: 20px 24px;
+  background-color: #f3faf4;
+}
+
+/* Header row: title on left, close button on right */
+.location-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.location-panel-header h3 {
+  font-size: 1rem;
+  color: var(--green);
+}
+
+/* Simulated data warning strip */
+.simulated-warning {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background-color: #fff8e1;
+  border: 1px solid #ffe082;
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 0.85rem;
+  color: #795548;
+  margin-bottom: 16px;
+}
+
+/* Two-column grid showing each location field */
+.location-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+/* Each individual field box */
+.location-item {
+  background-color: var(--white);
+  border: 1px solid var(--grey-border);
+  border-radius: 8px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.location-item .loc-label {
+  font-size: 0.75rem;
+  color: #999;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.location-item .loc-value {
+  font-size: 1rem;
+  font-weight: bold;
+  color: #222;
+}
+
+/* Loading / error states inside the location panel */
+.location-loading,
+.location-error {
+  font-size: 0.95rem;
+  padding: 8px 0;
+  text-align: center;
+}
+
+.location-loading { color: var(--grey-text); }
+.location-error   { color: var(--red);       }
+
+@media (max-width: 600px) {
+  .location-panel {
+    padding: 16px;
+  }
+  .location-grid {
+    grid-template-columns: 1fr;
   }
 }

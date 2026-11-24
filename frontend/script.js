@@ -106,6 +106,11 @@ function buildBusCard(bus) {
         🗺 View Route
       </button>
 
+      <!-- View Location button — passes the bus ID to showLocation() when clicked -->
+      <button class="btn-view-location" onclick="showLocation('${bus.id}')">
+        📍 View Location
+      </button>
+
     </div>
   `;
 }
@@ -386,5 +391,145 @@ async function showRoute(busId) {
     // This block runs if the fetch itself failed (server not running, network error)
     routePanelContent.innerHTML =
       '<p class="route-error">❌ Could not load route. Make sure the server is running.</p>';
+  }
+}
+
+// ─────────────────────────────────────────────────────────
+//  Location Panel  (added in Commit 12)
+//
+//  showLocation(busId) — called when "View Location" is clicked.
+//    Fetches GET /api/buses/:id/location and renders the GPS details.
+//
+//  closeLocation()     — called when "Close" is clicked.
+//    Hides the panel.
+// ─────────────────────────────────────────────────────────
+
+// Get references to the location panel elements
+const locationPanel        = document.getElementById('locationPanel');
+const locationPanelTitle   = document.getElementById('locationPanelTitle');
+const locationPanelContent = document.getElementById('locationPanelContent');
+const closeLocationBtn     = document.getElementById('closeLocationBtn');
+
+// closeLocation()
+// Hides the location panel by adding the "hidden" class back.
+function closeLocation() {
+  locationPanel.classList.add('hidden');
+  locationPanelContent.innerHTML = ''; // clear old content
+}
+
+// Wire the Close button
+closeLocationBtn.addEventListener('click', closeLocation);
+
+// formatDateTime(isoString)
+// Converts an ISO date-time string like "2026-11-23T08:30:00Z"
+// into a readable format like "23 Nov 2026, 08:30:00".
+// new Date() parses ISO strings natively in all modern browsers.
+function formatDateTime(isoString) {
+  const date = new Date(isoString);
+
+  // toLocaleString() converts the Date object to a readable string.
+  // We pass options to control exactly which parts are shown.
+  return date.toLocaleString('en-IN', {
+    day:    '2-digit',
+    month:  'short',
+    year:   'numeric',
+    hour:   '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false
+  });
+}
+
+// showLocation(busId)
+// Fetches the simulated GPS location for the given bus ID
+// and displays it in the location panel.
+async function showLocation(busId) {
+
+  // 1. Show the panel immediately with a loading message
+  locationPanelTitle.textContent = '📍 Simulated GPS Location';
+  locationPanelContent.innerHTML = '<p class="location-loading">Loading location...</p>';
+  locationPanel.classList.remove('hidden');
+
+  // 2. Scroll the panel into view smoothly
+  locationPanel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+  try {
+    // 3. Fetch the location from our Express API
+    //    e.g. GET /api/buses/BUS001/location
+    const response = await fetch('/api/buses/' + busId + '/location');
+
+    // 4. Handle 404 — bus has no location record
+    if (response.status === 404) {
+      locationPanelContent.innerHTML =
+        '<p class="location-error">⚠️ No location data available for this bus.</p>';
+      return;
+    }
+
+    // 5. Handle other server errors
+    if (!response.ok) {
+      locationPanelContent.innerHTML =
+        '<p class="location-error">❌ Could not load location data.</p>';
+      return;
+    }
+
+    // 6. Parse the JSON response
+    const loc = await response.json();
+
+    // 7. Update the panel title with bus number
+    locationPanelTitle.textContent = '📍 Simulated GPS — ' + loc.busNumber;
+
+    // 8. Build the simulated data warning strip
+    const warningHTML =
+      '<div class="simulated-warning">' +
+        '⚠️ This is <strong>simulated demo data</strong>, not real GPS.' +
+      '</div>';
+
+    // 9. Format the lastUpdated timestamp into a readable string
+    const readableTime = formatDateTime(loc.lastUpdated);
+
+    // 10. Build the two-column location detail grid
+    //     Each field gets its own box with a label and a value.
+    const gridHTML =
+      '<div class="location-grid">' +
+
+        '<div class="location-item">' +
+          '<span class="loc-label">Bus Number</span>' +
+          '<span class="loc-value">' + loc.busNumber + '</span>' +
+        '</div>' +
+
+        '<div class="location-item">' +
+          '<span class="loc-label">Bus ID</span>' +
+          '<span class="loc-value">' + loc.busId + '</span>' +
+        '</div>' +
+
+        '<div class="location-item">' +
+          '<span class="loc-label">Latitude</span>' +
+          '<span class="loc-value">' + loc.latitude + '°</span>' +
+        '</div>' +
+
+        '<div class="location-item">' +
+          '<span class="loc-label">Longitude</span>' +
+          '<span class="loc-value">' + loc.longitude + '°</span>' +
+        '</div>' +
+
+        '<div class="location-item">' +
+          '<span class="loc-label">Speed</span>' +
+          '<span class="loc-value">' + loc.speed + ' km/h</span>' +
+        '</div>' +
+
+        '<div class="location-item">' +
+          '<span class="loc-label">Last Updated</span>' +
+          '<span class="loc-value">' + readableTime + '</span>' +
+        '</div>' +
+
+      '</div>';
+
+    // 11. Inject both the warning and the grid into the panel
+    locationPanelContent.innerHTML = warningHTML + gridHTML;
+
+  } catch (error) {
+    // Runs if fetch itself failed — server not running or network error
+    locationPanelContent.innerHTML =
+      '<p class="location-error">❌ Could not reach the server. Make sure it is running.</p>';
   }
 }

@@ -132,6 +132,20 @@
 
       </div>
 
+      <!-- Location Panel (added in Commit 12) -->
+      <!-- Hidden by default. script.js shows it when "View Location" is clicked. -->
+      <div id="locationPanel" class="location-panel hidden">
+
+        <div class="location-panel-header">
+          <h3 id="locationPanelTitle">📍 Simulated GPS Location</h3>
+          <button id="closeLocationBtn" class="btn-close">✕ Close</button>
+        </div>
+
+        <!-- Location details are injected here by script.js -->
+        <div id="locationPanelContent"></div>
+
+      </div>
+
     </section>
 
   </main>
