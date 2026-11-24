@@ -1,42 +1,42 @@
 [
   {
     "busId": "BUS001",
-    "latitude": 31.457,
-    "longitude": 77.03484,
+    "latitude": 31.4200,
+    "longitude": 77.0500,
     "speed": 42,
-    "lastUpdated": "2026-11-24T05:13:23.533Z",
+    "lastUpdated": "2026-11-23T08:30:00Z",
     "note": "SIMULATED DEMO DATA — not real GPS"
   },
   {
     "busId": "BUS002",
-    "latitude": 30.9045,
-    "longitude": 77.0967,
-    "speed": 0,
-    "lastUpdated": "2026-11-24T05:13:23.533Z",
+    "latitude": 30.9200,
+    "longitude": 77.1000,
+    "speed": 35,
+    "lastUpdated": "2026-11-23T08:45:00Z",
     "note": "SIMULATED DEMO DATA — not real GPS"
   },
   {
     "busId": "BUS003",
-    "latitude": 32.0998,
-    "longitude": 76.2691,
-    "speed": 0,
-    "lastUpdated": "2026-11-24T05:13:23.586Z",
+    "latitude": 32.1600,
+    "longitude": 76.2950,
+    "speed": 28,
+    "lastUpdated": "2026-11-23T09:00:00Z",
     "note": "SIMULATED DEMO DATA — not real GPS"
   },
   {
     "busId": "BUS004",
-    "latitude": 31.93986,
-    "longitude": 77.10736,
+    "latitude": 31.9200,
+    "longitude": 77.1050,
     "speed": 50,
-    "lastUpdated": "2026-11-24T05:13:23.534Z",
+    "lastUpdated": "2026-11-23T09:15:00Z",
     "note": "SIMULATED DEMO DATA — not real GPS"
   },
   {
     "busId": "BUS005",
-    "latitude": 31.4685,
-    "longitude": 76.2694,
+    "latitude": 31.4700,
+    "longitude": 76.2700,
     "speed": 0,
-    "lastUpdated": "2026-11-24T05:13:23.534Z",
+    "lastUpdated": "2026-11-23T09:30:00Z",
     "note": "SIMULATED DEMO DATA — not real GPS"
   }
 ]

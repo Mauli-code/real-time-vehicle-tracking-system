@@ -345,6 +345,85 @@ app.post('/api/simulate', (req, res) => {
 
 // --- Start the Server ---
 // Begin listening for incoming requests on port 3000.
-app.listen(PORT, () => {
+// Once the server is ready, we start the automatic location simulation.
+
+// SIMULATION_INTERVAL controls how often bus positions are updated (in milliseconds).
+// 10000 = 10 seconds. Easy to change for testing or demos.
+const SIMULATION_INTERVAL = 10000;
+
+// simulationTimer holds the ID returned by setInterval().
+// We store it so we can stop the timer cleanly when the server shuts down.
+// null means the timer is not running yet.
+let simulationTimer = null;
+
+// startSimulation()
+// Starts a repeating timer that calls simulation.runAllBuses() every
+// SIMULATION_INTERVAL milliseconds.
+//
+// setInterval(callback, delay) is a built-in Node.js function.
+// It runs the callback function repeatedly, waiting 'delay' ms between each run.
+// It returns a timer ID that we can pass to clearInterval() to stop it.
+//
+// We check simulationTimer !== null first to make sure we do not accidentally
+// start two timers running at the same time (which would cause double updates).
+function startSimulation() {
+  if (simulationTimer !== null) {
+    console.log('Simulation is already running. Not starting a second timer.');
+    return;
+  }
+
+  simulationTimer = setInterval(function () {
+    // Move every bus one step along its route
+    const results = simulation.runAllBuses();
+
+    // Print a short summary to the terminal so you can see it working
+    const moving   = results.filter(function (r) { return r.status === 'moving'; }).length;
+    const arrived  = results.filter(function (r) { return r.status === 'arrived_at_stop'; }).length;
+    const finished = results.filter(function (r) { return r.status === 'at_destination'; }).length;
+
+    console.log(
+      '[Simulation] ' + new Date().toLocaleTimeString() +
+      ' — moved: ' + moving +
+      ', arrived at stop: ' + arrived +
+      ', at destination: ' + finished
+    );
+  }, SIMULATION_INTERVAL);
+
+  console.log('✔ Automatic bus simulation started (interval: ' + SIMULATION_INTERVAL / 1000 + 's)');
+  console.log('  NOTE: All location updates are SIMULATED DEMO DATA — not real GPS.');
+}
+
+// stopSimulation()
+// Stops the repeating timer by passing the timer ID to clearInterval().
+// After this call, runAllBuses() will no longer be called automatically.
+function stopSimulation() {
+  if (simulationTimer !== null) {
+    clearInterval(simulationTimer);
+    simulationTimer = null;
+    console.log('Simulation timer stopped.');
+  }
+}
+
+// Start the Express server, then start the simulation inside the callback.
+// The callback runs only once — after the server has successfully bound to PORT.
+// Starting the simulation here ensures the server is ready before updates begin.
+const server = app.listen(PORT, () => {
   console.log(`Server is running at http://localhost:${PORT}`);
+  startSimulation();
 });
+
+// Handle graceful shutdown.
+// SIGINT  is sent when you press Ctrl+C in the terminal.
+// SIGTERM is sent by process managers (e.g. when deploying to a server).
+// We stop the simulation timer and close the HTTP server cleanly before exiting.
+function shutdown(signal) {
+  console.log('\nReceived ' + signal + '. Shutting down...');
+  stopSimulation();
+  server.close(function () {
+    console.log('HTTP server closed. Goodbye.');
+    process.exit(0);
+  });
+}
+
+process.on('SIGINT',  function () { shutdown('SIGINT');  });
+process.on('SIGTERM', function () { shutdown('SIGTERM'); });
