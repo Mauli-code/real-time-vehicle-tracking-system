@@ -836,3 +836,38 @@ body {
     height: 240px;
   }
 }
+
+/* ── 21. Tracking status badge  (added in Commit 16) ─────── */
+
+/* Small status line shown between the warning strip and the location grid */
+.tracking-status {
+  font-size: 0.82rem;
+  padding: 6px 10px;
+  border-radius: 5px;
+  margin-bottom: 14px;
+  font-weight: 500;
+}
+
+/* Green — simulation is running and data is fresh */
+.status-active {
+  background-color: var(--green-bg);
+  color: var(--green);
+}
+
+/* Blue-tint — a fetch is in progress */
+.status-updating {
+  background-color: var(--blue-light);
+  color: var(--blue);
+}
+
+/* Red-tint — the last refresh failed */
+.status-error {
+  background-color: var(--red-bg);
+  color: var(--red);
+}
+
+/* Grey — tracking stopped (panel closed) */
+.status-stopped {
+  background-color: #f0f4f8;
+  color: var(--grey-text);
+}

@@ -395,13 +395,13 @@ async function showRoute(busId) {
 }
 
 // ─────────────────────────────────────────────────────────
-//  Location Panel  (added in Commit 12)
+//  Location Panel  (added in Commit 12, enhanced in Commit 16)
 //
-//  showLocation(busId) — called when "View Location" is clicked.
-//    Fetches GET /api/buses/:id/location and renders the GPS details.
-//
-//  closeLocation()     — called when "Close" is clicked.
-//    Hides the panel.
+//  showLocation(busId)       — called when "View Location" is clicked.
+//  refreshLocationDisplay()  — called by the auto-refresh timer.
+//  startLocationRefresh()    — starts the 10-second refresh timer.
+//  stopLocationRefresh()     — cancels the timer.
+//  closeLocation()           — stops the timer and hides the panel.
 // ─────────────────────────────────────────────────────────
 
 // Get references to the location panel elements
@@ -410,11 +410,50 @@ const locationPanelTitle   = document.getElementById('locationPanelTitle');
 const locationPanelContent = document.getElementById('locationPanelContent');
 const closeLocationBtn     = document.getElementById('closeLocationBtn');
 
+// currentBusId stores which bus is currently being tracked.
+// When the user clicks "View Location" on a different bus,
+// we update this variable and the refresh timer uses the new ID.
+let currentBusId = null;
+
+// locationRefreshTimer holds the ID returned by setInterval().
+// null means no timer is running.
+let locationRefreshTimer = null;
+
+// LOCATION_REFRESH_INTERVAL — how often to fetch updated coordinates (ms).
+const LOCATION_REFRESH_INTERVAL = 10000; // 10 seconds
+
+// stopLocationRefresh()
+// Cancels the refresh timer.
+// Called when the user closes the panel or selects a different bus.
+function stopLocationRefresh() {
+  if (locationRefreshTimer !== null) {
+    clearInterval(locationRefreshTimer);
+    locationRefreshTimer = null;
+  }
+}
+
+// startLocationRefresh()
+// Starts a repeating timer that calls refreshLocationDisplay() every
+// LOCATION_REFRESH_INTERVAL milliseconds.
+//
+// Before starting, it always cancels any existing timer first.
+// This prevents two timers running simultaneously if the user
+// quickly clicks "View Location" on two different buses.
+function startLocationRefresh() {
+  stopLocationRefresh(); // cancel any old timer first
+
+  locationRefreshTimer = setInterval(function () {
+    refreshLocationDisplay();
+  }, LOCATION_REFRESH_INTERVAL);
+}
+
 // closeLocation()
-// Hides the location panel by adding the "hidden" class back.
+// Stops the refresh timer and hides the location panel.
 function closeLocation() {
+  stopLocationRefresh();
+  currentBusId = null;
   locationPanel.classList.add('hidden');
-  locationPanelContent.innerHTML = ''; // clear old content
+  locationPanelContent.innerHTML = '';
 }
 
 // Wire the Close button
@@ -423,12 +462,8 @@ closeLocationBtn.addEventListener('click', closeLocation);
 // formatDateTime(isoString)
 // Converts an ISO date-time string like "2026-11-23T08:30:00Z"
 // into a readable format like "23 Nov 2026, 08:30:00".
-// new Date() parses ISO strings natively in all modern browsers.
 function formatDateTime(isoString) {
   const date = new Date(isoString);
-
-  // toLocaleString() converts the Date object to a readable string.
-  // We pass options to control exactly which parts are shown.
   return date.toLocaleString('en-IN', {
     day:    '2-digit',
     month:  'short',
@@ -440,95 +475,211 @@ function formatDateTime(isoString) {
   });
 }
 
+// updateTrackingStatus(message, cssClass)
+// Updates the small status badge inside the location panel.
+// cssClass is one of: 'status-active', 'status-updating', 'status-error', 'status-stopped'
+function updateTrackingStatus(message, cssClass) {
+  const statusEl = document.getElementById('trackingStatus');
+  if (!statusEl) return;
+  statusEl.textContent = message;
+  statusEl.className   = 'tracking-status ' + cssClass;
+}
+
+// buildLocationGridHTML(loc)
+// Builds the two-column detail grid HTML for a location object.
+// Uses fixed element IDs (loc-lat, loc-lon, etc.) so refreshLocationDisplay()
+// can update individual fields without rebuilding the whole panel.
+function buildLocationGridHTML(loc) {
+  const readableTime = formatDateTime(loc.lastUpdated);
+
+  return (
+    '<div class="location-grid">' +
+
+      '<div class="location-item">' +
+        '<span class="loc-label">Bus Number</span>' +
+        '<span class="loc-value" id="loc-busNumber">' + loc.busNumber + '</span>' +
+      '</div>' +
+
+      '<div class="location-item">' +
+        '<span class="loc-label">Bus ID</span>' +
+        '<span class="loc-value" id="loc-busId">' + loc.busId + '</span>' +
+      '</div>' +
+
+      '<div class="location-item">' +
+        '<span class="loc-label">Latitude</span>' +
+        '<span class="loc-value" id="loc-lat">' + loc.latitude + '°</span>' +
+      '</div>' +
+
+      '<div class="location-item">' +
+        '<span class="loc-label">Longitude</span>' +
+        '<span class="loc-value" id="loc-lon">' + loc.longitude + '°</span>' +
+      '</div>' +
+
+      '<div class="location-item">' +
+        '<span class="loc-label">Speed</span>' +
+        '<span class="loc-value" id="loc-speed">' + loc.speed + ' km/h</span>' +
+      '</div>' +
+
+      '<div class="location-item">' +
+        '<span class="loc-label">Last Updated</span>' +
+        '<span class="loc-value" id="loc-updated">' + readableTime + '</span>' +
+      '</div>' +
+
+    '</div>'
+  );
+}
+
+// updateMapFrame(loc)
+// Updates the existing map iframe src only if the coordinates have changed.
+// This avoids reloading the map tile on every refresh when the bus is stationary.
+function updateMapFrame(loc) {
+  const iframe = document.querySelector('.map-frame');
+  if (!iframe) return; // map not visible — nothing to update
+
+  const boxSize = 0.05;
+  const minLon  = (loc.longitude - boxSize).toFixed(5);
+  const minLat  = (loc.latitude  - boxSize).toFixed(5);
+  const maxLon  = (loc.longitude + boxSize).toFixed(5);
+  const maxLat  = (loc.latitude  + boxSize).toFixed(5);
+
+  const newSrc =
+    'https://www.openstreetmap.org/export/embed.html' +
+    '?bbox='   + minLon + ',' + minLat + ',' + maxLon + ',' + maxLat +
+    '&layer=mapnik' +
+    '&marker=' + loc.latitude + ',' + loc.longitude;
+
+  // Only update src if the URL actually changed — prevents unnecessary map reloads
+  if (iframe.src !== newSrc) {
+    iframe.src = newSrc;
+
+    // Also update the "Open in OSM" link if it exists
+    const osmLink = document.querySelector('.map-osm-link');
+    if (osmLink) {
+      osmLink.href =
+        'https://www.openstreetmap.org/?mlat=' + loc.latitude +
+        '&mlon=' + loc.longitude +
+        '#map=13/' + loc.latitude + '/' + loc.longitude;
+    }
+  }
+}
+
+// refreshLocationDisplay()
+// Called automatically every LOCATION_REFRESH_INTERVAL ms by the timer.
+// Fetches the latest location for currentBusId and updates only the
+// individual value elements in the panel — no full rebuild, no map flicker.
+async function refreshLocationDisplay() {
+  if (!currentBusId) return; // safety check — no bus selected
+
+  // Guard against a stale timer firing after the user selected a new bus.
+  // We capture the busId at the start of this call and check it hasn't
+  // changed before we apply the update.
+  const busIdAtStart = currentBusId;
+
+  updateTrackingStatus('Updating location...', 'status-updating');
+
+  try {
+    const response = await fetch('/api/buses/' + busIdAtStart + '/location');
+
+    // If the bus ID changed while we were waiting for the response, discard it
+    if (currentBusId !== busIdAtStart) return;
+
+    if (!response.ok) {
+      updateTrackingStatus('Unable to refresh location', 'status-error');
+      return; // keep showing the last successful data
+    }
+
+    const loc = await response.json();
+
+    // Update only the individual value elements by their IDs
+    const latEl     = document.getElementById('loc-lat');
+    const lonEl     = document.getElementById('loc-lon');
+    const speedEl   = document.getElementById('loc-speed');
+    const updatedEl = document.getElementById('loc-updated');
+
+    if (latEl)     latEl.textContent     = loc.latitude  + '°';
+    if (lonEl)     lonEl.textContent     = loc.longitude + '°';
+    if (speedEl)   speedEl.textContent   = loc.speed     + ' km/h';
+    if (updatedEl) updatedEl.textContent = formatDateTime(loc.lastUpdated);
+
+    // Update the map only if coordinates changed
+    updateMapFrame(loc);
+
+    updateTrackingStatus('🟢 Simulated tracking active — updates every 10s', 'status-active');
+
+  } catch (error) {
+    if (currentBusId !== busIdAtStart) return;
+    updateTrackingStatus('Unable to refresh location', 'status-error');
+    // The last good data remains visible — we do not clear the panel
+  }
+}
+
 // showLocation(busId)
-// Fetches the simulated GPS location for the given bus ID
-// and displays it in the location panel.
+// Called when "View Location" is clicked on a bus card.
+// Builds the full panel on first open, then hands off to the refresh timer.
 async function showLocation(busId) {
 
-  // 1. Show the panel immediately with a loading message
+  // 1. If this bus is already being tracked, do nothing — panel is already open
+  if (currentBusId === busId && !locationPanel.classList.contains('hidden')) {
+    locationPanel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    return;
+  }
+
+  // 2. Stop any existing refresh timer (user selected a different bus)
+  stopLocationRefresh();
+  currentBusId = busId;
+
+  // 3. Show the panel with a loading message
   locationPanelTitle.textContent = '📍 Simulated GPS Location';
   locationPanelContent.innerHTML = '<p class="location-loading">Loading location...</p>';
   locationPanel.classList.remove('hidden');
-
-  // 2. Scroll the panel into view smoothly
   locationPanel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 
   try {
-    // 3. Fetch the location from our Express API
-    //    e.g. GET /api/buses/BUS001/location
+    // 4. Fetch the initial location
     const response = await fetch('/api/buses/' + busId + '/location');
 
-    // 4. Handle 404 — bus has no location record
+    // Guard: if the user clicked a different bus before this response arrived, discard
+    if (currentBusId !== busId) return;
+
     if (response.status === 404) {
       locationPanelContent.innerHTML =
         '<p class="location-error">⚠️ No location data available for this bus.</p>';
       return;
     }
 
-    // 5. Handle other server errors
     if (!response.ok) {
       locationPanelContent.innerHTML =
         '<p class="location-error">❌ Could not load location data.</p>';
       return;
     }
 
-    // 6. Parse the JSON response
     const loc = await response.json();
 
-    // 7. Update the panel title with bus number
+    // 5. Update the panel title
     locationPanelTitle.textContent = '📍 Simulated GPS — ' + loc.busNumber;
 
-    // 8. Build the simulated data warning strip
+    // 6. Build the full panel: warning + status badge + grid + map
     const warningHTML =
       '<div class="simulated-warning">' +
         '⚠️ This is <strong>simulated demo data</strong>, not real GPS.' +
       '</div>';
 
-    // 9. Format the lastUpdated timestamp into a readable string
-    const readableTime = formatDateTime(loc.lastUpdated);
+    const statusHTML =
+      '<p id="trackingStatus" class="tracking-status status-active">' +
+        '🟢 Simulated tracking active — updates every 10s' +
+      '</p>';
 
-    // 10. Build the two-column location detail grid
-    //     Each field gets its own box with a label and a value.
-    const gridHTML =
-      '<div class="location-grid">' +
+    locationPanelContent.innerHTML =
+      warningHTML +
+      statusHTML +
+      buildLocationGridHTML(loc) +
+      buildMapHTML(loc);
 
-        '<div class="location-item">' +
-          '<span class="loc-label">Bus Number</span>' +
-          '<span class="loc-value">' + loc.busNumber + '</span>' +
-        '</div>' +
-
-        '<div class="location-item">' +
-          '<span class="loc-label">Bus ID</span>' +
-          '<span class="loc-value">' + loc.busId + '</span>' +
-        '</div>' +
-
-        '<div class="location-item">' +
-          '<span class="loc-label">Latitude</span>' +
-          '<span class="loc-value">' + loc.latitude + '°</span>' +
-        '</div>' +
-
-        '<div class="location-item">' +
-          '<span class="loc-label">Longitude</span>' +
-          '<span class="loc-value">' + loc.longitude + '°</span>' +
-        '</div>' +
-
-        '<div class="location-item">' +
-          '<span class="loc-label">Speed</span>' +
-          '<span class="loc-value">' + loc.speed + ' km/h</span>' +
-        '</div>' +
-
-        '<div class="location-item">' +
-          '<span class="loc-label">Last Updated</span>' +
-          '<span class="loc-value">' + readableTime + '</span>' +
-        '</div>' +
-
-      '</div>';
-
-    // 11. Inject both the warning and the grid into the panel
-    locationPanelContent.innerHTML = warningHTML + gridHTML + buildMapHTML(loc);
+    // 7. Start the automatic refresh timer
+    startLocationRefresh();
 
   } catch (error) {
-    // Runs if fetch itself failed — server not running or network error
+    if (currentBusId !== busId) return;
     locationPanelContent.innerHTML =
       '<p class="location-error">❌ Could not reach the server. Make sure it is running.</p>';
   }
