@@ -525,11 +525,102 @@ async function showLocation(busId) {
       '</div>';
 
     // 11. Inject both the warning and the grid into the panel
-    locationPanelContent.innerHTML = warningHTML + gridHTML;
+    locationPanelContent.innerHTML = warningHTML + gridHTML + buildMapHTML(loc);
 
   } catch (error) {
     // Runs if fetch itself failed — server not running or network error
     locationPanelContent.innerHTML =
       '<p class="location-error">❌ Could not reach the server. Make sure it is running.</p>';
   }
+}
+
+// ─────────────────────────────────────────────────────────
+//  Map Section  (added in Commit 13)
+//
+//  buildMapHTML(loc) — builds an OpenStreetMap iframe HTML string
+//  for the given location object.
+//  Called inside showLocation() and appended below the data grid.
+// ─────────────────────────────────────────────────────────
+
+// buildMapHTML(loc)
+// Takes a location object with latitude and longitude fields.
+// Returns an HTML string containing:
+//   - a section label
+//   - an internet notice
+//   - an OpenStreetMap <iframe> centred on the coordinates
+//   - an "Open in OpenStreetMap" link
+//   - an attribution line
+//
+// The OpenStreetMap embed URL format is:
+//   https://www.openstreetmap.org/export/embed.html
+//     ?bbox=<lon-0.05>,<lat-0.05>,<lon+0.05>,<lat+0.05>
+//     &layer=mapnik
+//     &marker=<lat>,<lon>
+//
+// bbox defines the visible area (a small box around the point).
+// marker places a pin at the exact coordinates.
+function buildMapHTML(loc) {
+
+  // Validate that latitude and longitude are real numbers before building the URL.
+  // If they are missing or invalid, show a simple message instead.
+  if (
+    typeof loc.latitude  !== 'number' ||
+    typeof loc.longitude !== 'number' ||
+    isNaN(loc.latitude)  ||
+    isNaN(loc.longitude)
+  ) {
+    return '<p class="location-error" style="margin-top:16px;">⚠️ Map not available — invalid coordinates.</p>';
+  }
+
+  const lat = loc.latitude;
+  const lon = loc.longitude;
+
+  // Define a small bounding box (±0.05 degrees) around the bus location.
+  // This sets how much of the map is visible around the marker.
+  const boxSize = 0.05;
+  const minLon  = (lon - boxSize).toFixed(5);
+  const minLat  = (lat - boxSize).toFixed(5);
+  const maxLon  = (lon + boxSize).toFixed(5);
+  const maxLat  = (lat + boxSize).toFixed(5);
+
+  // Build the OpenStreetMap embed URL
+  const embedUrl =
+    'https://www.openstreetmap.org/export/embed.html' +
+    '?bbox='    + minLon + ',' + minLat + ',' + maxLon + ',' + maxLat +
+    '&layer=mapnik' +
+    '&marker='  + lat + ',' + lon;
+
+  // Build the direct link URL that opens OpenStreetMap in a new tab
+  const osmUrl =
+    'https://www.openstreetmap.org/?mlat=' + lat +
+    '&mlon=' + lon +
+    '#map=13/' + lat + '/' + lon;
+
+  // Return the complete map section HTML string
+  return (
+    '<div class="map-section">' +
+
+      '<div class="map-label">' +
+        '<span class="map-label-text">📍 Simulated Bus Location on Map</span>' +
+        '<a href="' + osmUrl + '" target="_blank" rel="noopener" class="map-osm-link">' +
+          '↗ Open in OpenStreetMap' +
+        '</a>' +
+      '</div>' +
+
+      '<p class="map-notice">ℹ️ Internet connection required to load the map.</p>' +
+
+      '<iframe ' +
+        'class="map-frame" ' +
+        'src="'  + embedUrl + '" ' +
+        'title="Simulated bus location map" ' +
+        'loading="lazy" ' +
+        'referrerpolicy="no-referrer">' +
+      '</iframe>' +
+
+      '<p class="map-attribution">' +
+        'Map data © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors' +
+      '</p>' +
+
+    '</div>'
+  );
 }
