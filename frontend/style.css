@@ -871,3 +871,94 @@ body {
   background-color: #f0f4f8;
   color: var(--grey-text);
 }
+
+/* ── 22. ETA Section  (added in Commit 18) ───────────────── */
+
+/* Wrapper that sits between the location grid and the map */
+.eta-section {
+  margin-top: 20px;
+}
+
+.eta-section-title {
+  font-size: 0.9rem;
+  font-weight: bold;
+  color: var(--grey-text);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  margin-bottom: 10px;
+}
+
+/* Disclaimer note below the title */
+.eta-disclaimer {
+  font-size: 0.78rem;
+  color: #aaa;
+  margin-bottom: 12px;
+  line-height: 1.4;
+}
+
+/* Full-width table */
+.eta-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+}
+
+.eta-table th {
+  text-align: left;
+  padding: 8px 10px;
+  background-color: #f0f4f8;
+  color: var(--grey-text);
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  border-bottom: 2px solid var(--grey-border);
+}
+
+.eta-table td {
+  padding: 9px 10px;
+  border-bottom: 1px solid var(--grey-border);
+  color: #333;
+  vertical-align: middle;
+}
+
+/* Highlight the very next stop */
+.eta-table tr.next-stop td {
+  background-color: var(--blue-light);
+  font-weight: 600;
+}
+
+.eta-table tr.next-stop td:first-child::before {
+  content: '▶ ';
+  color: var(--blue);
+}
+
+/* "Bus has arrived" and stationary messages */
+.eta-arrived,
+.eta-stationary,
+.eta-loading,
+.eta-error {
+  font-size: 0.88rem;
+  padding: 10px 0;
+  text-align: center;
+}
+
+.eta-arrived   { color: var(--green);     font-weight: 600; }
+.eta-stationary{ color: var(--grey-text); }
+.eta-loading   { color: var(--grey-text); }
+.eta-error     { color: var(--red);       }
+
+/* Stale ETA badge — shown when last refresh failed */
+.eta-stale-badge {
+  font-size: 0.72rem;
+  color: var(--orange);
+  font-weight: bold;
+  margin-left: 6px;
+}
+
+@media (max-width: 600px) {
+  .eta-table th,
+  .eta-table td {
+    padding: 7px 6px;
+    font-size: 0.82rem;
+  }
+}

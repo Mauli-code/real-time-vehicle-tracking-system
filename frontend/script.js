@@ -567,6 +567,7 @@ function updateMapFrame(loc) {
 // Called automatically every LOCATION_REFRESH_INTERVAL ms by the timer.
 // Fetches the latest location for currentBusId and updates only the
 // individual value elements in the panel — no full rebuild, no map flicker.
+// Also refreshes the ETA section (added in Commit 18).
 async function refreshLocationDisplay() {
   if (!currentBusId) return; // safety check — no bus selected
 
@@ -605,6 +606,9 @@ async function refreshLocationDisplay() {
     updateMapFrame(loc);
 
     updateTrackingStatus('🟢 Simulated tracking active — updates every 10s', 'status-active');
+
+    // Also refresh the ETA section — reuse the same tick (no extra timer)
+    refreshETADisplay(busIdAtStart);
 
   } catch (error) {
     if (currentBusId !== busIdAtStart) return;
@@ -673,16 +677,145 @@ async function showLocation(busId) {
       warningHTML +
       statusHTML +
       buildLocationGridHTML(loc) +
+      '<div id="etaSection"><p class="eta-loading">Loading arrival times...</p></div>' +
       buildMapHTML(loc);
 
     // 7. Start the automatic refresh timer
     startLocationRefresh();
+
+    // 8. Fetch and display ETA immediately (do not wait for first timer tick)
+    fetchAndDisplayETA(busId);
 
   } catch (error) {
     if (currentBusId !== busId) return;
     locationPanelContent.innerHTML =
       '<p class="location-error">❌ Could not reach the server. Make sure it is running.</p>';
   }
+}
+
+// ─────────────────────────────────────────────────────────
+//  ETA Section  (added in Commit 18)
+//
+//  buildETAHTML(etaData)    — builds the ETA table HTML string.
+//  fetchAndDisplayETA(id)   — fetches ETA from API and renders it.
+//  refreshETADisplay(id)    — called by the refresh timer to update ETA.
+// ─────────────────────────────────────────────────────────
+
+// buildETAHTML(etaData)
+// Takes the response object from GET /api/buses/:id/eta and returns
+// an HTML string for the ETA section.
+function buildETAHTML(etaData) {
+
+  // Bus has arrived at its final destination
+  if (etaData.status === 'arrived') {
+    return (
+      '<div class="eta-section">' +
+        '<p class="eta-section-title">🕐 Estimated Arrival Times</p>' +
+        '<p class="eta-arrived">✅ Bus has reached its final destination: ' + etaData.destination + '</p>' +
+      '</div>'
+    );
+  }
+
+  // Bus is stationary — show the table but with null ETA values
+  // Bus is moving — show normal ETA table
+  const upcomingStops = etaData.upcomingStops || [];
+
+  if (upcomingStops.length === 0) {
+    return (
+      '<div class="eta-section">' +
+        '<p class="eta-section-title">🕐 Estimated Arrival Times</p>' +
+        '<p class="eta-stationary">No upcoming stops available.</p>' +
+      '</div>'
+    );
+  }
+
+  // Build the table rows — one per upcoming stop
+  let rowsHTML = '';
+  upcomingStops.forEach(function (stop, index) {
+    // The first row gets the 'next-stop' CSS class for the blue highlight
+    const rowClass = (index === 0) ? ' class="next-stop"' : '';
+
+    // ETA display: show minutes or "Stationary" if null
+    let etaDisplay;
+    if (stop.etaMinutes === null) {
+      etaDisplay = '<span class="eta-stationary">Stationary</span>';
+    } else {
+      etaDisplay = stop.etaMinutes + ' min';
+    }
+
+    rowsHTML +=
+      '<tr' + rowClass + '>' +
+        '<td>' + stop.stopName + '</td>' +
+        '<td>' + stop.distanceKm + ' km</td>' +
+        '<td>' + etaDisplay + '</td>' +
+      '</tr>';
+  });
+
+  return (
+    '<div class="eta-section">' +
+      '<p class="eta-section-title">🕐 Estimated Arrival Times</p>' +
+      '<p class="eta-disclaimer">' +
+        'Estimated arrival times are based on simulated GPS location and speed. ' +
+        'Actual arrival times may vary.' +
+      '</p>' +
+      '<table class="eta-table">' +
+        '<thead>' +
+          '<tr>' +
+            '<th>Bus Stop</th>' +
+            '<th>Distance</th>' +
+            '<th>ETA</th>' +
+          '</tr>' +
+        '</thead>' +
+        '<tbody>' + rowsHTML + '</tbody>' +
+      '</table>' +
+    '</div>'
+  );
+}
+
+// fetchAndDisplayETA(busId)
+// Calls GET /api/buses/:id/eta, builds the HTML, and injects it into
+// the #etaSection element inside the location panel.
+async function fetchAndDisplayETA(busId) {
+  const etaSection = document.getElementById('etaSection');
+  if (!etaSection) return; // panel was closed before this ran
+
+  try {
+    const response = await fetch('/api/buses/' + busId + '/eta');
+
+    // Guard — discard if the user switched buses while waiting
+    if (currentBusId !== busId) return;
+
+    if (!response.ok) {
+      etaSection.innerHTML = '<p class="eta-error">❌ Could not load arrival times.</p>';
+      return;
+    }
+
+    const etaData = await response.json();
+
+    // Guard again after the await
+    if (currentBusId !== busId) return;
+
+    etaSection.innerHTML = buildETAHTML(etaData);
+
+  } catch (error) {
+    if (currentBusId !== busId) return;
+    // Keep whatever was shown before — just mark it stale
+    const staleBadge = document.querySelector('.eta-stale-badge');
+    if (!staleBadge && etaSection) {
+      const title = etaSection.querySelector('.eta-section-title');
+      if (title) {
+        title.innerHTML += '<span class="eta-stale-badge">(last refresh failed)</span>';
+      }
+    }
+  }
+}
+
+// refreshETADisplay(busId)
+// Called from refreshLocationDisplay() on every timer tick.
+// Re-fetches ETA and replaces the table content silently.
+function refreshETADisplay(busId) {
+  if (!busId) return;
+  fetchAndDisplayETA(busId); // reuses the same fetch+render logic
 }
 
 // ─────────────────────────────────────────────────────────
