@@ -390,7 +390,101 @@ app.get('/api/buses/:id/location', (req, res) => {
 
 // --- Schedule APIs ---
 
-// GET /api/schedules
+// getISTDateTime()
+// Returns the current date and time in Indian Standard Time (IST, UTC+5:30).
+// We use Intl.DateTimeFormat to get IST parts reliably on any machine.
+function getISTDateTime() {
+  const now = new Date();
+  const fmt = new Intl.DateTimeFormat('en-IN', {
+    timeZone: 'Asia/Kolkata',
+    weekday: 'long',
+    hour:    '2-digit',
+    minute:  '2-digit',
+    hour12:  false
+  });
+  const parts = fmt.formatToParts(now);
+  const get   = (type) => parts.find((p) => p.type === type).value;
+  const weekday = get('weekday');
+  const hour    = parseInt(get('hour'),   10);
+  const minute  = parseInt(get('minute'), 10);
+  return { weekday, minutesSinceMidnight: hour * 60 + minute };
+}
+
+// parseTime(timeStr)
+// Converts "HH:MM" into total minutes since midnight.
+// Example: "09:30" → 570
+function parseTime(timeStr) {
+  const parts = timeStr.split(':');
+  return parseInt(parts[0], 10) * 60 + parseInt(parts[1], 10);
+}
+
+// GET /api/stops/:id/upcoming-buses
+// Returns buses scheduled to arrive at the given stop later today (IST).
+// Excludes arrivals whose scheduled time has already passed.
+// Sorted by scheduled arrival time, earliest first.
+app.get('/api/stops/:id/upcoming-buses', (req, res) => {
+  const stopId = req.params.id;
+
+  // Check the stop exists
+  const stop = stops.find((s) => s.id === stopId);
+  if (!stop) {
+    return res.status(404).json({ error: 'Stop not found' });
+  }
+
+  const { weekday, minutesSinceMidnight } = getISTDateTime();
+
+  const upcoming = [];
+
+  // Loop through every schedule and check if it serves this stop today
+  schedules.forEach(function (sch) {
+
+    // 1. Does this schedule operate today?
+    if (!sch.operatingDays.includes(weekday)) return;
+
+    // 2. Does the route for this schedule pass through this stop?
+    const stopTiming = sch.stopTimings.find((st) => st.stopId === stopId);
+    if (!stopTiming) return;
+
+    // 3. Has this arrival already passed?
+    const arrivalMins = parseTime(stopTiming.arrivalTime);
+    if (arrivalMins <= minutesSinceMidnight) return;
+
+    // 4. Look up the bus for extra details
+    const bus   = buses.find((b) => b.id === sch.busId);
+    const route = routes.find((r) => r.id === sch.routeId);
+    if (!bus || !route) return;
+
+    // 5. How many minutes until this bus arrives?
+    const minsUntilArrival = arrivalMins - minutesSinceMidnight;
+
+    upcoming.push({
+      scheduleId:       sch.id,
+      busId:            bus.id,
+      busNumber:        bus.busNumber,
+      source:           route.source,
+      destination:      route.destination,
+      scheduledArrival: stopTiming.arrivalTime,
+      scheduledDeparture: stopTiming.departureTime,
+      minsUntilArrival: minsUntilArrival,
+      available:        bus.available,
+      note:             'SAMPLE DEMO DATA — not official HRTC schedule'
+    });
+  });
+
+  // Sort by arrival time (earliest first)
+  upcoming.sort(function (a, b) {
+    return parseTime(a.scheduledArrival) - parseTime(b.scheduledArrival);
+  });
+
+  res.json({
+    stopId:   stopId,
+    stopName: stop.name,
+    city:     stop.city,
+    day:      weekday,
+    upcoming: upcoming
+  });
+});
+
 // Returns all bus schedules.
 app.get('/api/schedules', (req, res) => {
   res.json(schedules);

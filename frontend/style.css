@@ -962,3 +962,105 @@ body {
     font-size: 0.82rem;
   }
 }
+
+/* ── 23. Upcoming Buses Section  (added in Commit 20) ────── */
+
+.upcoming-note {
+  font-size: 0.88rem;
+  color: var(--grey-text);
+  margin-bottom: 18px;
+  line-height: 1.5;
+}
+
+/* Stop selector row: dropdown + two buttons side by side */
+.stop-selector {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: flex-end;
+  margin-bottom: 20px;
+}
+
+/* Full-width upcoming buses table */
+.upcoming-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+}
+
+.upcoming-table th {
+  text-align: left;
+  padding: 8px 10px;
+  background-color: #f0f4f8;
+  color: var(--grey-text);
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  border-bottom: 2px solid var(--grey-border);
+}
+
+.upcoming-table td {
+  padding: 9px 10px;
+  border-bottom: 1px solid var(--grey-border);
+  color: #333;
+  vertical-align: middle;
+}
+
+/* Green text for available buses */
+.avail-yes {
+  color: var(--green);
+  font-weight: 600;
+}
+
+/* Red text for unavailable buses */
+.avail-no {
+  color: var(--red);
+  font-weight: 600;
+}
+
+/* "Arriving in X min" cell */
+.arriving-in {
+  font-weight: 600;
+  color: var(--blue);
+}
+
+/* Loading / empty / error states */
+.upcoming-loading,
+.upcoming-empty,
+.upcoming-error {
+  font-size: 0.9rem;
+  padding: 14px 0;
+  text-align: center;
+}
+
+.upcoming-loading { color: var(--grey-text); }
+.upcoming-empty   { color: var(--grey-text); }
+.upcoming-error   { color: var(--red);       }
+
+/* Result header line above the table */
+.upcoming-result-header {
+  font-size: 0.85rem;
+  color: var(--grey-text);
+  margin-bottom: 10px;
+}
+
+.upcoming-result-header strong {
+  color: #333;
+}
+
+@media (max-width: 600px) {
+  .stop-selector {
+    flex-direction: column;
+  }
+
+  .stop-selector .btn-primary,
+  .stop-selector .btn-reset {
+    width: 100%;
+  }
+
+  .upcoming-table th,
+  .upcoming-table td {
+    padding: 7px 6px;
+    font-size: 0.82rem;
+  }
+}

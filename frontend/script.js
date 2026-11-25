@@ -819,7 +819,144 @@ function refreshETADisplay(busId) {
 }
 
 // ─────────────────────────────────────────────────────────
-//  Map Section  (added in Commit 13)
+//  Upcoming Buses  (added in Commit 20)
+//
+//  loadStopDropdown()     — fills #stopSelect with all stops from /api/stops.
+//  findUpcomingBuses()    — fetches /api/stops/:id/upcoming-buses and renders.
+//  buildUpcomingHTML()    — builds the results table HTML string.
+// ─────────────────────────────────────────────────────────
+
+const stopSelect          = document.getElementById('stopSelect');
+const findBusesBtn        = document.getElementById('findBusesBtn');
+const refreshUpcomingBtn  = document.getElementById('refreshUpcomingBtn');
+const upcomingContainer   = document.getElementById('upcomingContainer');
+
+// loadStopDropdown()
+// Calls GET /api/stops and adds one <option> per stop to the dropdown.
+// Runs once when the page first loads.
+async function loadStopDropdown() {
+  try {
+    const response = await fetch('/api/stops');
+    if (!response.ok) return;
+
+    const stops = await response.json();
+
+    stops.forEach(function (stop) {
+      const option = document.createElement('option');
+      option.value       = stop.id;
+      option.textContent = stop.name + ' (' + stop.city + ')';
+      stopSelect.appendChild(option);
+    });
+  } catch (error) {
+    // If stops can't be loaded, the dropdown stays empty with the default option
+    console.warn('Could not load stop list:', error.message);
+  }
+}
+
+// buildUpcomingHTML(data)
+// Takes the API response from /api/stops/:id/upcoming-buses
+// and returns an HTML string with the results table.
+function buildUpcomingHTML(data) {
+  const upcoming = data.upcoming;
+
+  // Header line showing which stop was searched and on which day
+  const headerHTML =
+    '<p class="upcoming-result-header">' +
+      'Showing results for <strong>' + data.stopName + '</strong>' +
+      ' (' + data.city + ') on <strong>' + data.day + '</strong>' +
+    '</p>';
+
+  // No upcoming buses today
+  if (upcoming.length === 0) {
+    return headerHTML +
+      '<p class="upcoming-empty">No upcoming buses at this stop today.</p>';
+  }
+
+  // Build table rows — one per upcoming bus
+  let rowsHTML = '';
+  upcoming.forEach(function (bus) {
+    // Availability text and CSS class
+    const availClass = bus.available ? 'avail-yes' : 'avail-no';
+    const availText  = bus.available ? '✅ Available' : '❌ Unavailable';
+
+    // "Arriving in" display
+    const arrivingIn = bus.minsUntilArrival < 60
+      ? bus.minsUntilArrival + ' min'
+      : Math.floor(bus.minsUntilArrival / 60) + 'h ' + (bus.minsUntilArrival % 60) + 'm';
+
+    rowsHTML +=
+      '<tr>' +
+        '<td>' + bus.busNumber + '</td>' +
+        '<td>' + bus.destination + '</td>' +
+        '<td>' + bus.scheduledArrival + ' IST</td>' +
+        '<td class="arriving-in">' + arrivingIn + '</td>' +
+        '<td class="' + availClass + '">' + availText + '</td>' +
+      '</tr>';
+  });
+
+  return (
+    headerHTML +
+    '<table class="upcoming-table">' +
+      '<thead>' +
+        '<tr>' +
+          '<th>Bus Number</th>' +
+          '<th>Destination</th>' +
+          '<th>Scheduled Arrival</th>' +
+          '<th>Arriving In</th>' +
+          '<th>Availability</th>' +
+        '</tr>' +
+      '</thead>' +
+      '<tbody>' + rowsHTML + '</tbody>' +
+    '</table>'
+  );
+}
+
+// findUpcomingBuses()
+// Reads the selected stop from the dropdown, calls the API,
+// and renders the results.
+async function findUpcomingBuses() {
+  const stopId = stopSelect.value;
+
+  // No stop selected
+  if (!stopId) {
+    upcomingContainer.innerHTML =
+      '<p class="upcoming-error">Please select a bus stop first.</p>';
+    return;
+  }
+
+  upcomingContainer.innerHTML =
+    '<p class="upcoming-loading">Loading upcoming buses...</p>';
+
+  try {
+    const response = await fetch('/api/stops/' + stopId + '/upcoming-buses');
+
+    if (response.status === 404) {
+      upcomingContainer.innerHTML =
+        '<p class="upcoming-error">Stop not found.</p>';
+      return;
+    }
+
+    if (!response.ok) {
+      upcomingContainer.innerHTML =
+        '<p class="upcoming-error">❌ Could not load upcoming buses.</p>';
+      return;
+    }
+
+    const data = await response.json();
+    upcomingContainer.innerHTML = buildUpcomingHTML(data);
+
+  } catch (error) {
+    upcomingContainer.innerHTML =
+      '<p class="upcoming-error">❌ Could not reach the server. Make sure it is running.</p>';
+  }
+}
+
+// Wire up the Find Buses and Refresh buttons
+findBusesBtn.addEventListener('click', findUpcomingBuses);
+refreshUpcomingBtn.addEventListener('click', findUpcomingBuses);
+
+// Load the stop dropdown as soon as the page opens
+loadStopDropdown();
 //
 //  buildMapHTML(loc) — builds an OpenStreetMap iframe HTML string
 //  for the given location object.

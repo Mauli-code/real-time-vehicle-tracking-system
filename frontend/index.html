@@ -148,6 +148,37 @@
 
     </section>
 
+    <!-- ── Upcoming Buses ── -->
+    <section class="card upcoming-card">
+
+      <div class="card-header">
+        <h2>🕐 Upcoming Buses at a Stop</h2>
+        <span class="demo-badge">Demo Data</span>
+      </div>
+
+      <p class="upcoming-note">
+        Select a bus stop to see which buses are scheduled to arrive today.
+        Timings are in IST and are sample scheduled data only —
+        they may differ from live GPS-based estimated arrival times.
+      </p>
+
+      <!-- Stop selector row -->
+      <div class="stop-selector">
+        <div class="filter-group">
+          <label for="stopSelect">Bus Stop</label>
+          <select id="stopSelect">
+            <option value="">— Select a stop —</option>
+          </select>
+        </div>
+        <button id="findBusesBtn" class="btn-primary">Find Buses</button>
+        <button id="refreshUpcomingBtn" class="btn-reset">↺ Refresh</button>
+      </div>
+
+      <!-- Results injected here by script.js -->
+      <div id="upcomingContainer"></div>
+
+    </section>
+
   </main>
 
   <!-- ═══════════════════════════════════════
