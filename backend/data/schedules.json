@@ -1,0 +1,98 @@
+[
+  {
+    "id": "SCH001",
+    "busId": "BUS001",
+    "routeId": "ROUTE001",
+    "departureTime": "06:00",
+    "arrivalTime": "13:30",
+    "operatingDays": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
+    "stopTimings": [
+      { "stopId": "STOP001", "arrivalTime": "06:00", "departureTime": "06:10" },
+      { "stopId": "STOP004", "arrivalTime": "09:00", "departureTime": "09:15" },
+      { "stopId": "STOP005", "arrivalTime": "11:00", "departureTime": "11:10" },
+      { "stopId": "STOP006", "arrivalTime": "13:30", "departureTime": "13:30" }
+    ],
+    "note": "SAMPLE DEMO DATA — not official HRTC schedule"
+  },
+  {
+    "id": "SCH002",
+    "busId": "BUS001",
+    "routeId": "ROUTE001",
+    "departureTime": "14:00",
+    "arrivalTime": "21:30",
+    "operatingDays": ["Monday", "Wednesday", "Friday", "Sunday"],
+    "stopTimings": [
+      { "stopId": "STOP001", "arrivalTime": "14:00", "departureTime": "14:10" },
+      { "stopId": "STOP004", "arrivalTime": "17:00", "departureTime": "17:15" },
+      { "stopId": "STOP005", "arrivalTime": "19:00", "departureTime": "19:10" },
+      { "stopId": "STOP006", "arrivalTime": "21:30", "departureTime": "21:30" }
+    ],
+    "note": "SAMPLE DEMO DATA — not official HRTC schedule"
+  },
+  {
+    "id": "SCH003",
+    "busId": "BUS002",
+    "routeId": "ROUTE002",
+    "departureTime": "07:30",
+    "arrivalTime": "09:00",
+    "operatingDays": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
+    "stopTimings": [
+      { "stopId": "STOP001", "arrivalTime": "07:30", "departureTime": "07:40" },
+      { "stopId": "STOP002", "arrivalTime": "09:00", "departureTime": "09:00" }
+    ],
+    "note": "SAMPLE DEMO DATA — not official HRTC schedule"
+  },
+  {
+    "id": "SCH004",
+    "busId": "BUS002",
+    "routeId": "ROUTE002",
+    "departureTime": "15:00",
+    "arrivalTime": "16:30",
+    "operatingDays": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
+    "stopTimings": [
+      { "stopId": "STOP001", "arrivalTime": "15:00", "departureTime": "15:10" },
+      { "stopId": "STOP002", "arrivalTime": "16:30", "departureTime": "16:30" }
+    ],
+    "note": "SAMPLE DEMO DATA — not official HRTC schedule"
+  },
+  {
+    "id": "SCH005",
+    "busId": "BUS003",
+    "routeId": "ROUTE003",
+    "departureTime": "08:00",
+    "arrivalTime": "09:30",
+    "operatingDays": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
+    "stopTimings": [
+      { "stopId": "STOP007", "arrivalTime": "08:00", "departureTime": "08:10" },
+      { "stopId": "STOP008", "arrivalTime": "09:30", "departureTime": "09:30" }
+    ],
+    "note": "SAMPLE DEMO DATA — not official HRTC schedule"
+  },
+  {
+    "id": "SCH006",
+    "busId": "BUS004",
+    "routeId": "ROUTE004",
+    "departureTime": "09:00",
+    "arrivalTime": "11:00",
+    "operatingDays": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
+    "stopTimings": [
+      { "stopId": "STOP004", "arrivalTime": "09:00", "departureTime": "09:10" },
+      { "stopId": "STOP005", "arrivalTime": "11:00", "departureTime": "11:00" }
+    ],
+    "note": "SAMPLE DEMO DATA — not official HRTC schedule"
+  },
+  {
+    "id": "SCH007",
+    "busId": "BUS005",
+    "routeId": "ROUTE005",
+    "departureTime": "10:00",
+    "arrivalTime": "12:30",
+    "operatingDays": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
+    "stopTimings": [
+      { "stopId": "STOP003", "arrivalTime": "10:00", "departureTime": "10:10" },
+      { "stopId": "STOP010", "arrivalTime": "11:15", "departureTime": "11:25" },
+      { "stopId": "STOP009", "arrivalTime": "12:30", "departureTime": "12:30" }
+    ],
+    "note": "SAMPLE DEMO DATA — not official HRTC schedule"
+  }
+]

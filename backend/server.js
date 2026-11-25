@@ -42,6 +42,84 @@ const simulation = require('./simulation');
 // eta.js calculates estimated arrival times from current location and route data.
 const eta = require('./eta');
 
+// --- Load & Validate Schedule Data ---
+const schedulesFilePath = path.join(__dirname, 'data', 'schedules.json');
+const schedules = JSON.parse(fs.readFileSync(schedulesFilePath, 'utf-8'));
+
+// validateSchedules()
+// Runs simple checks on schedules.json at server startup.
+// Prints a warning for any problem found — does not crash the server.
+function validateSchedules(scheduleList, busList, routeList) {
+  const TIME_REGEX = /^\d{2}:\d{2}$/; // matches HH:MM format
+  const VALID_DAYS = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+  const seenIds = [];
+
+  scheduleList.forEach(function (sch, i) {
+    const label = 'schedules.json[' + i + '] (id: ' + sch.id + ')';
+
+    // Check 1: unique ID
+    if (seenIds.includes(sch.id)) {
+      console.warn('⚠ WARNING ' + label + ' — duplicate schedule ID');
+    } else {
+      seenIds.push(sch.id);
+    }
+
+    // Check 2: busId exists
+    const bus = busList.find(function (b) { return b.id === sch.busId; });
+    if (!bus) {
+      console.warn('⚠ WARNING ' + label + ' — busId "' + sch.busId + '" not found');
+    }
+
+    // Check 3: routeId exists
+    const route = routeList.find(function (r) { return r.id === sch.routeId; });
+    if (!route) {
+      console.warn('⚠ WARNING ' + label + ' — routeId "' + sch.routeId + '" not found');
+    }
+
+    // Check 4: schedule route matches bus route
+    if (bus && route && bus.routeId !== sch.routeId) {
+      console.warn('⚠ WARNING ' + label + ' — routeId does not match bus.routeId');
+    }
+
+    // Check 5: departure and arrival time format
+    if (!TIME_REGEX.test(sch.departureTime)) {
+      console.warn('⚠ WARNING ' + label + ' — invalid departureTime: ' + sch.departureTime);
+    }
+    if (!TIME_REGEX.test(sch.arrivalTime)) {
+      console.warn('⚠ WARNING ' + label + ' — invalid arrivalTime: ' + sch.arrivalTime);
+    }
+
+    // Check 6: operating days are valid
+    if (Array.isArray(sch.operatingDays)) {
+      sch.operatingDays.forEach(function (day) {
+        if (!VALID_DAYS.includes(day)) {
+          console.warn('⚠ WARNING ' + label + ' — invalid day: ' + day);
+        }
+      });
+    }
+
+    // Check 7: stop timings use valid time format and belong to the route
+    if (Array.isArray(sch.stopTimings) && route) {
+      sch.stopTimings.forEach(function (st, j) {
+        const stLabel = label + ' stopTimings[' + j + ']';
+        if (!route.stopIds.includes(st.stopId)) {
+          console.warn('⚠ WARNING ' + stLabel + ' — stopId "' + st.stopId + '" not in route');
+        }
+        if (!TIME_REGEX.test(st.arrivalTime)) {
+          console.warn('⚠ WARNING ' + stLabel + ' — invalid arrivalTime: ' + st.arrivalTime);
+        }
+        if (!TIME_REGEX.test(st.departureTime)) {
+          console.warn('⚠ WARNING ' + stLabel + ' — invalid departureTime: ' + st.departureTime);
+        }
+      });
+    }
+  });
+
+  console.log('✔ Schedule data validation complete (' + scheduleList.length + ' schedules checked)');
+}
+
+validateSchedules(schedules, buses, routes);
+
 // validateLocations(locations, buses)
 // Runs simple checks on the locations array when the server starts.
 // If any record is invalid, a warning is printed to the console.
@@ -308,6 +386,57 @@ app.get('/api/buses/:id/location', (req, res) => {
   }
 
   res.json(buildLocationResponse(location, bus));
+});
+
+// --- Schedule APIs ---
+
+// GET /api/schedules
+// Returns all bus schedules.
+app.get('/api/schedules', (req, res) => {
+  res.json(schedules);
+});
+
+// GET /api/schedules/:id
+// Returns a single schedule by its ID.
+// Returns 404 if the schedule does not exist.
+app.get('/api/schedules/:id', (req, res) => {
+  const schedule = schedules.find((s) => s.id === req.params.id);
+  if (!schedule) {
+    return res.status(404).json({ error: 'Schedule not found' });
+  }
+  res.json(schedule);
+});
+
+// GET /api/buses/:id/schedules
+// Returns all schedules for a specific bus.
+// Enriches each schedule with busNumber and routeName for convenience.
+// Returns 404 if the bus does not exist.
+// Returns an empty array if the bus exists but has no schedules.
+app.get('/api/buses/:id/schedules', (req, res) => {
+  const busId = req.params.id;
+  const bus   = buses.find((b) => b.id === busId);
+
+  if (!bus) {
+    return res.status(404).json({ error: 'Bus not found' });
+  }
+
+  // Filter schedules that belong to this bus
+  const busSchedules = schedules.filter((s) => s.busId === busId);
+
+  // Enrich each schedule with busNumber and routeName
+  const enriched = busSchedules.map(function (sch) {
+    const route = routes.find((r) => r.id === sch.routeId);
+    return Object.assign({}, sch, {
+      busNumber: bus.busNumber,
+      routeName: route ? route.routeName : null
+    });
+  });
+
+  res.json({
+    busId:     busId,
+    busNumber: bus.busNumber,
+    schedules: enriched
+  });
 });
 
 // --- ETA API ---
