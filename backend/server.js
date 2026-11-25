@@ -120,6 +120,62 @@ function validateSchedules(scheduleList, busList, routeList) {
 
 validateSchedules(schedules, buses, routes);
 
+// --- Load & Validate Traffic Data ---
+const trafficFilePath = path.join(__dirname, 'data', 'traffic.json');
+const trafficData = JSON.parse(fs.readFileSync(trafficFilePath, 'utf-8'));
+
+// validateTraffic()
+// Runs simple checks on traffic.json at server startup.
+// Warns about invalid records — does not crash the server.
+function validateTraffic(trafficList, routeList) {
+  const VALID_LEVELS = ['light', 'moderate', 'heavy'];
+  // Expected delay in minutes for each traffic level
+  const EXPECTED_DELAYS = { light: 0, moderate: 5, heavy: 15 };
+  const seenRouteIds = [];
+
+  trafficList.forEach(function (record, i) {
+    const label = 'traffic.json[' + i + '] (routeId: ' + record.routeId + ')';
+
+    // Check 1: routeId exists
+    const routeExists = routeList.find(function (r) { return r.id === record.routeId; });
+    if (!routeExists) {
+      console.warn('⚠ WARNING ' + label + ' — routeId not found in routes.json');
+    }
+
+    // Check 2: no duplicate routeIds
+    if (seenRouteIds.includes(record.routeId)) {
+      console.warn('⚠ WARNING ' + label + ' — duplicate routeId');
+    } else {
+      seenRouteIds.push(record.routeId);
+    }
+
+    // Check 3: valid traffic level
+    if (!VALID_LEVELS.includes(record.trafficLevel)) {
+      console.warn('⚠ WARNING ' + label + ' — invalid trafficLevel: ' + record.trafficLevel);
+    }
+
+    // Check 4: delay must be a non-negative number
+    if (typeof record.delayMinutes !== 'number' || record.delayMinutes < 0) {
+      console.warn('⚠ WARNING ' + label + ' — invalid delayMinutes: ' + record.delayMinutes);
+    }
+
+    // Check 5: delay matches the traffic level
+    if (
+      VALID_LEVELS.includes(record.trafficLevel) &&
+      typeof record.delayMinutes === 'number' &&
+      record.delayMinutes !== EXPECTED_DELAYS[record.trafficLevel]
+    ) {
+      console.warn('⚠ WARNING ' + label +
+        ' — delayMinutes (' + record.delayMinutes + ') does not match expected for ' +
+        record.trafficLevel + ' (' + EXPECTED_DELAYS[record.trafficLevel] + ')');
+    }
+  });
+
+  console.log('✔ Traffic data validation complete (' + trafficList.length + ' records checked)');
+}
+
+validateTraffic(trafficData, routes);
+
 // validateLocations(locations, buses)
 // Runs simple checks on the locations array when the server starts.
 // If any record is invalid, a warning is printed to the console.
@@ -531,6 +587,98 @@ app.get('/api/buses/:id/schedules', (req, res) => {
     busNumber: bus.busNumber,
     schedules: enriched
   });
+});
+
+// --- Traffic API ---
+
+// GET /api/traffic
+// Returns all simulated traffic records.
+app.get('/api/traffic', (req, res) => {
+  // Add simulated: true to every record
+  const enriched = trafficData.map(function (t) {
+    return Object.assign({}, t, { simulated: true });
+  });
+  res.json(enriched);
+});
+
+// GET /api/routes/:id/traffic
+// Returns traffic information for a specific route.
+// Returns 404 if the route does not exist.
+// Returns a clear status if traffic data is unavailable for this route.
+app.get('/api/routes/:id/traffic', (req, res) => {
+  const routeId = req.params.id;
+
+  // Check the route exists
+  const route = routes.find((r) => r.id === routeId);
+  if (!route) {
+    return res.status(404).json({ error: 'Route not found' });
+  }
+
+  // Look for a traffic record for this route
+  const traffic = trafficData.find((t) => t.routeId === routeId);
+
+  if (!traffic) {
+    // Route exists but no traffic data — return a default "unavailable" response
+    return res.json({
+      routeId:      routeId,
+      routeName:    route.routeName,
+      trafficLevel: 'unavailable',
+      delayMinutes: 0,
+      description:  'No traffic information available for this route.',
+      simulated:    true
+    });
+  }
+
+  res.json(Object.assign({}, traffic, {
+    routeName: route.routeName,
+    simulated: true
+  }));
+});
+
+// GET /api/buses/:id/traffic
+// Finds the bus, reads its assigned route, and returns that route's traffic.
+// Returns 404 if the bus does not exist.
+app.get('/api/buses/:id/traffic', (req, res) => {
+  const busId = req.params.id;
+  const bus   = buses.find((b) => b.id === busId);
+
+  if (!bus) {
+    return res.status(404).json({ error: 'Bus not found' });
+  }
+
+  if (!bus.routeId) {
+    return res.json({
+      busId:        busId,
+      busNumber:    bus.busNumber,
+      trafficLevel: 'unavailable',
+      delayMinutes: 0,
+      description:  'No route assigned to this bus.',
+      simulated:    true
+    });
+  }
+
+  const route   = routes.find((r) => r.id === bus.routeId);
+  const traffic = trafficData.find((t) => t.routeId === bus.routeId);
+
+  if (!traffic) {
+    return res.json({
+      busId:        busId,
+      busNumber:    bus.busNumber,
+      routeId:      bus.routeId,
+      routeName:    route ? route.routeName : null,
+      trafficLevel: 'unavailable',
+      delayMinutes: 0,
+      description:  'No traffic information available for this route.',
+      simulated:    true
+    });
+  }
+
+  res.json(Object.assign({}, traffic, {
+    busId:     busId,
+    busNumber: bus.busNumber,
+    routeName: route ? route.routeName : null,
+    simulated: true
+  }));
 });
 
 // --- ETA API ---

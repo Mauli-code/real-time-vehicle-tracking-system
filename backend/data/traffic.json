@@ -1,0 +1,42 @@
+[
+  {
+    "routeId": "ROUTE001",
+    "trafficLevel": "moderate",
+    "delayMinutes": 5,
+    "description": "Moderate traffic near Mandi — roadwork on NH-3 causing slight delays.",
+    "lastUpdated": "2026-11-25T07:00:00Z",
+    "note": "SIMULATED DEMO DATA — not real traffic information"
+  },
+  {
+    "routeId": "ROUTE002",
+    "trafficLevel": "light",
+    "delayMinutes": 0,
+    "description": "Traffic moving smoothly on the Shimla-Solan highway.",
+    "lastUpdated": "2026-11-25T07:00:00Z",
+    "note": "SIMULATED DEMO DATA — not real traffic information"
+  },
+  {
+    "routeId": "ROUTE003",
+    "trafficLevel": "heavy",
+    "delayMinutes": 15,
+    "description": "Heavy traffic near Dharamshala bus stand due to local market day.",
+    "lastUpdated": "2026-11-25T07:00:00Z",
+    "note": "SIMULATED DEMO DATA — not real traffic information"
+  },
+  {
+    "routeId": "ROUTE004",
+    "trafficLevel": "light",
+    "delayMinutes": 0,
+    "description": "Clear roads on the Mandi-Kullu Beas Valley route.",
+    "lastUpdated": "2026-11-25T07:00:00Z",
+    "note": "SIMULATED DEMO DATA — not real traffic information"
+  },
+  {
+    "routeId": "ROUTE005",
+    "trafficLevel": "moderate",
+    "delayMinutes": 5,
+    "description": "Moderate traffic near Una — increased vehicles due to weekly bazaar.",
+    "lastUpdated": "2026-11-25T07:00:00Z",
+    "note": "SIMULATED DEMO DATA — not real traffic information"
+  }
+]
