@@ -38,6 +38,10 @@ const locations = JSON.parse(fs.readFileSync(locationsFilePath, 'utf-8'));
 // It is a separate module loaded with require() — same as Express.
 const simulation = require('./simulation');
 
+// --- Load ETA Module ---
+// eta.js calculates estimated arrival times from current location and route data.
+const eta = require('./eta');
+
 // validateLocations(locations, buses)
 // Runs simple checks on the locations array when the server starts.
 // If any record is invalid, a warning is printed to the console.
@@ -306,9 +310,29 @@ app.get('/api/buses/:id/location', (req, res) => {
   res.json(buildLocationResponse(location, bus));
 });
 
-// --- Simulation API ---
+// --- ETA API ---
 
-// POST /api/simulate/:busId
+// GET /api/buses/:id/eta
+// Returns estimated arrival times for a bus to reach its upcoming stops.
+// Uses the bus's current simulated location and speed from locations.json.
+//
+// Example: GET /api/buses/BUS001/eta
+app.get('/api/buses/:id/eta', (req, res) => {
+  const busId = req.params.id;
+  const result = eta.calculateETA(busId);
+
+  // If the result contains an 'error' field, something went wrong
+  if (result.error) {
+    if (result.error === 'Bus not found') {
+      return res.status(404).json(result);
+    }
+    return res.status(400).json(result);
+  }
+
+  res.json(result);
+});
+
+// --- Simulation API ---
 // Moves a single bus one step along its route.
 // Returns the movement result — previous and new coordinates.
 //
