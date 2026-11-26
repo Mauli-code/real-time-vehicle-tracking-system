@@ -17,6 +17,51 @@ const PORT = 3000;     // The port the server will listen on
 const busesFilePath = path.join(__dirname, 'data', 'buses.json');
 const buses = JSON.parse(fs.readFileSync(busesFilePath, 'utf-8'));
 
+// validateBusSustainability()
+// Checks fuelType and emissionStandard on every bus at server startup.
+// Prints a warning for any problem — does not crash the server.
+function validateBusSustainability(busList) {
+  const VALID_FUEL_TYPES  = ['Diesel', 'CNG', 'Electric'];
+  const VALID_EMISSIONS   = ['BS-IV', 'BS-VI', 'Not Applicable'];
+
+  busList.forEach(function (bus) {
+    const label = 'buses.json (id: ' + bus.id + ')';
+
+    // If fuelType is missing, default it to 'Unknown' for safe API responses
+    if (!bus.fuelType) {
+      console.warn('⚠ WARNING ' + label + ' — missing fuelType, defaulting to Unknown');
+      bus.fuelType = 'Unknown';
+    } else if (!VALID_FUEL_TYPES.includes(bus.fuelType)) {
+      console.warn('⚠ WARNING ' + label + ' — invalid fuelType: ' + bus.fuelType);
+    }
+
+    // If emissionStandard is missing, default it to 'Unknown'
+    if (!bus.emissionStandard) {
+      console.warn('⚠ WARNING ' + label + ' — missing emissionStandard, defaulting to Unknown');
+      bus.emissionStandard = 'Unknown';
+    } else if (!VALID_EMISSIONS.includes(bus.emissionStandard)) {
+      console.warn('⚠ WARNING ' + label + ' — invalid emissionStandard: ' + bus.emissionStandard);
+    }
+
+    // Electric buses must use "Not Applicable" — not BS-IV or BS-VI
+    if (bus.fuelType === 'Electric' && bus.emissionStandard !== 'Not Applicable') {
+      console.warn('⚠ WARNING ' + label + ' — Electric bus should have emissionStandard "Not Applicable"');
+    }
+
+    // Diesel and CNG buses must have a real emission standard
+    if (
+      (bus.fuelType === 'Diesel' || bus.fuelType === 'CNG') &&
+      bus.emissionStandard === 'Not Applicable'
+    ) {
+      console.warn('⚠ WARNING ' + label + ' — Diesel/CNG bus should not use "Not Applicable"');
+    }
+  });
+
+  console.log('✔ Bus sustainability validation complete (' + busList.length + ' buses checked)');
+}
+
+validateBusSustainability(buses);
+
 // --- Load Bus Stops Data ---
 // Same approach as buses — read stops.json once at startup and keep it in memory.
 const stopsFilePath = path.join(__dirname, 'data', 'stops.json');

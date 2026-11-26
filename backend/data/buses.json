@@ -43,7 +43,7 @@
     "routeName": "Mandi - Kullu Beas Valley Route",
     "routeId": "ROUTE004",
     "fuelType": "Electric",
-    "emissionStandard": "N/A",
+    "emissionStandard": "Not Applicable",
     "available": true,
     "note": "DEMO DATA"
   },
