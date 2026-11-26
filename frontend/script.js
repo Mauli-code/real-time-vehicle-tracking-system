@@ -91,12 +91,12 @@ function buildBusCard(bus) {
 
         <div class="detail-item">
           <span class="label">Fuel Type</span>
-          <span class="value">${bus.fuelType}</span>
+          <span class="value"><span class="fuel-badge fuel-${(bus.fuelType || 'Unknown').toLowerCase().replace(/\s+/g, '-')}">${bus.fuelType || 'Unknown'}</span></span>
         </div>
 
         <div class="detail-item">
           <span class="label">Emission</span>
-          <span class="value">${bus.emissionStandard}</span>
+          <span class="value">${bus.emissionStandard || 'Unknown'}</span>
         </div>
 
       </div>
@@ -194,6 +194,7 @@ searchInput.addEventListener('input', applyFilters);
 
 const sourceFilter      = document.getElementById('sourceFilter');
 const destinationFilter = document.getElementById('destinationFilter');
+const fuelFilter        = document.getElementById('fuelFilter');
 const resetBtn          = document.getElementById('resetBtn');
 
 // populateDropdowns()
@@ -245,15 +246,13 @@ function populateDropdowns() {
 // This replaces the old filterBuses() from Commit 4 — same idea,
 // but now it checks three controls instead of one.
 function applyFilters() {
-  const query       = searchInput.value.trim().toLowerCase(); // text search
-  const srcValue    = sourceFilter.value;                     // selected source ("" means All)
-  const destValue   = destinationFilter.value;                // selected destination
+  const query       = searchInput.value.trim().toLowerCase();
+  const srcValue    = sourceFilter.value;
+  const destValue   = destinationFilter.value;
+  const fuelValue   = fuelFilter ? fuelFilter.value : ''; // added in Commit 24
 
   const results = allBuses.filter(function (bus) {
 
-    // --- Search box check ---
-    // If the query is not empty, the bus must match in at least one field.
-    // If the query is empty, this check is skipped (always true).
     let matchesSearch = true;
     if (query !== '') {
       matchesSearch =
@@ -262,23 +261,23 @@ function applyFilters() {
         bus.destination.toLowerCase().includes(query);
     }
 
-    // --- Source dropdown check ---
-    // If a source is selected, the bus's source must equal it exactly.
-    // If "All Sources" is selected, srcValue is "" so this is always true.
     let matchesSource = true;
     if (srcValue !== '') {
       matchesSource = (bus.source === srcValue);
     }
 
-    // --- Destination dropdown check ---
-    // Same logic as source.
     let matchesDestination = true;
     if (destValue !== '') {
       matchesDestination = (bus.destination === destValue);
     }
 
-    // Keep this bus only if ALL three checks passed
-    return matchesSearch && matchesSource && matchesDestination;
+    // Fuel type filter (added in Commit 24)
+    let matchesFuel = true;
+    if (fuelValue !== '') {
+      matchesFuel = (bus.fuelType === fuelValue);
+    }
+
+    return matchesSearch && matchesSource && matchesDestination && matchesFuel;
   });
 
   renderBuses(results);
@@ -288,15 +287,17 @@ function applyFilters() {
 // the user picks a different option.
 sourceFilter.addEventListener('change', applyFilters);
 destinationFilter.addEventListener('change', applyFilters);
+if (fuelFilter) fuelFilter.addEventListener('change', applyFilters);
 
 // resetFilters()
 // Clears the search box and resets both dropdowns to their default
 // "All" option, then shows every bus.
 function resetFilters() {
-  searchInput.value       = '';  // clear the text input
-  sourceFilter.value      = '';  // reset to "All Sources"
-  destinationFilter.value = '';  // reset to "All Destinations"
-  renderBuses(allBuses);         // show all buses
+  searchInput.value       = '';
+  sourceFilter.value      = '';
+  destinationFilter.value = '';
+  if (fuelFilter) fuelFilter.value = '';
+  renderBuses(allBuses);
 }
 
 resetBtn.addEventListener('click', resetFilters);
