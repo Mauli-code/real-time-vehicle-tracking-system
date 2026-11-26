@@ -286,30 +286,60 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok' });
 });
 
+// getJourneyStatus(bus)
+// Returns one of four status strings based on bus availability and location.
+//
+// Logic:
+//   - If bus.available is false → 'unavailable'
+//   - If location exists and speed > 0 → 'running'
+//   - If ETA module says 'arrived' → 'arrived'
+//   - Otherwise → 'scheduled'
+//
+// Reads locations.json fresh so status reflects the current simulation state.
+function getJourneyStatus(bus) {
+  if (!bus.available) return 'unavailable';
+
+  // Read the latest location for this bus
+  try {
+    const freshLocs = JSON.parse(fs.readFileSync(locationsFilePath, 'utf-8'));
+    const loc = freshLocs.find((l) => l.busId === bus.id);
+
+    if (loc) {
+      // Bus is actively moving
+      if (loc.speed > 0) return 'running';
+
+      // Check if the bus has reached its final stop (speed 0 at destination)
+      // Use the ETA module's arrived detection
+      const etaResult = eta.calculateETA(bus.id);
+      if (etaResult && etaResult.status === 'arrived') return 'arrived';
+    }
+  } catch (err) {
+    // If location read fails, fall through to 'scheduled'
+  }
+
+  return 'scheduled';
+}
+
 // GET /api/buses
-// Returns the full list of all buses as a JSON array.
-// Example response: [ { "id": "BUS001", ... }, { "id": "BUS002", ... }, ... ]
+// Returns the full list of all buses, enriched with journeyStatus.
 app.get('/api/buses', (req, res) => {
-  res.json(buses);
+  const enriched = buses.map(function (bus) {
+    return Object.assign({}, bus, { journeyStatus: getJourneyStatus(bus) });
+  });
+  res.json(enriched);
 });
 
 // GET /api/buses/:id
-// Returns a single bus whose id matches the value in the URL.
-// :id is a route parameter — Express puts whatever the user types after
-// /api/buses/ into req.params.id automatically.
-//
-// Example: GET /api/buses/BUS001  →  returns the bus with id "BUS001"
-// Example: GET /api/buses/BUS999  →  returns 404 { "error": "Bus not found" }
+// Returns a single bus enriched with journeyStatus.
 app.get('/api/buses/:id', (req, res) => {
-  const busId = req.params.id;                             // Read the id from the URL
-  const bus = buses.find((b) => b.id === busId);           // Search the array for a match
+  const busId = req.params.id;
+  const bus = buses.find((b) => b.id === busId);
 
   if (!bus) {
-    // No bus matched — send a 404 (Not Found) status with an error message
     return res.status(404).json({ error: 'Bus not found' });
   }
 
-  res.json(bus); // Bus found — send it back as JSON
+  res.json(Object.assign({}, bus, { journeyStatus: getJourneyStatus(bus) }));
 });
 
 // --- Bus Stops API Routes ---

@@ -58,9 +58,15 @@ let allBuses = [];
 // We build the HTML as a string and use innerHTML to insert it.
 // This avoids creating many separate DOM elements manually.
 function buildBusCard(bus) {
-  // Decide which CSS class and label to use for the availability badge
-  const badgeClass = bus.available ? 'available' : 'unavailable';
-  const badgeText  = bus.available ? '✅ Available' : '❌ Not Available';
+  // Journey status badge (Commit 25) — falls back to available/unavailable
+  const statusMap = {
+    running:     { cls: 'running',     text: '🟢 Running'     },
+    scheduled:   { cls: 'scheduled',   text: '🕐 Scheduled'   },
+    arrived:     { cls: 'arrived',     text: '🏁 Arrived'     },
+    unavailable: { cls: 'unavailable', text: '❌ Unavailable'  }
+  };
+  const js = bus.journeyStatus || (bus.available ? 'scheduled' : 'unavailable');
+  const badge = statusMap[js] || statusMap['unavailable'];
 
   // Return the full HTML block for one bus card
   return `
@@ -68,7 +74,7 @@ function buildBusCard(bus) {
 
       <div class="bus-card-header">
         <span class="bus-number">${bus.busNumber}</span>
-        <span class="status-badge ${badgeClass}">${badgeText}</span>
+        <span class="status-badge ${badge.cls}">${badge.text}</span>
       </div>
 
       <div class="bus-route">
@@ -195,6 +201,7 @@ searchInput.addEventListener('input', applyFilters);
 const sourceFilter      = document.getElementById('sourceFilter');
 const destinationFilter = document.getElementById('destinationFilter');
 const fuelFilter        = document.getElementById('fuelFilter');
+const statusFilter      = document.getElementById('statusFilter');
 const resetBtn          = document.getElementById('resetBtn');
 
 // populateDropdowns()
@@ -277,7 +284,15 @@ function applyFilters() {
       matchesFuel = (bus.fuelType === fuelValue);
     }
 
-    return matchesSearch && matchesSource && matchesDestination && matchesFuel;
+    // Status filter (Commit 25)
+    let matchesStatus = true;
+    const statusValue = statusFilter ? statusFilter.value : '';
+    if (statusValue !== '') {
+      const js = bus.journeyStatus || (bus.available ? 'scheduled' : 'unavailable');
+      matchesStatus = (js === statusValue);
+    }
+
+    return matchesSearch && matchesSource && matchesDestination && matchesFuel && matchesStatus;
   });
 
   renderBuses(results);
@@ -288,6 +303,7 @@ function applyFilters() {
 sourceFilter.addEventListener('change', applyFilters);
 destinationFilter.addEventListener('change', applyFilters);
 if (fuelFilter) fuelFilter.addEventListener('change', applyFilters);
+if (statusFilter) statusFilter.addEventListener('change', applyFilters);
 
 // resetFilters()
 // Clears the search box and resets both dropdowns to their default
@@ -297,6 +313,7 @@ function resetFilters() {
   sourceFilter.value      = '';
   destinationFilter.value = '';
   if (fuelFilter) fuelFilter.value = '';
+  if (statusFilter) statusFilter.value = '';
   renderBuses(allBuses);
 }
 

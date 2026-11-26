@@ -1134,3 +1134,20 @@ body {
   background-color: #f0f4f8;
   color: var(--grey-text);
 }
+
+/* ── 26. Journey status badges  (added in Commit 25) ─────── */
+
+.status-badge.running {
+  background-color: var(--green-bg);
+  color: var(--green);
+}
+
+.status-badge.scheduled {
+  background-color: var(--blue-light);
+  color: var(--blue);
+}
+
+.status-badge.arrived {
+  background-color: #e8f5e9;
+  color: #1b5e20;
+}
