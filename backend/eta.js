@@ -1,10 +1,12 @@
 // eta.js
 // Calculates estimated arrival time (ETA) for a bus to reach its upcoming stops.
+// Now includes traffic delay adjustment (added in Commit 22).
 //
 // IMPORTANT:
 // - Distance is calculated using the Haversine formula — a straight-line
 //   approximation between GPS coordinates. It is NOT actual road distance.
 // - ETA does NOT include real traffic conditions, road curves, or stops.
+// - Traffic delay values are simulated demonstration data only.
 // - All results are approximate simulated estimates for demo purposes only.
 
 'use strict';
@@ -18,6 +20,7 @@ const busesPath     = path.join(DATA_DIR, 'buses.json');
 const stopsPath     = path.join(DATA_DIR, 'stops.json');
 const routesPath    = path.join(DATA_DIR, 'routes.json');
 const locationsPath = path.join(DATA_DIR, 'locations.json');
+const trafficPath   = path.join(DATA_DIR, 'traffic.json');
 
 // ── Load helpers ──────────────────────────────────────────
 function loadJSON(filePath) {
@@ -91,6 +94,7 @@ function calculateETA(busId) {
   const stops     = loadJSON(stopsPath);
   const routes    = loadJSON(routesPath);
   const locations = loadJSON(locationsPath);
+  const traffic   = loadJSON(trafficPath); // added in Commit 22
 
   // --- Find the bus ---
   const bus = buses.find(function (b) { return b.id === busId; });
@@ -121,6 +125,25 @@ function calculateETA(busId) {
     return { error: 'Route not found', busId: busId };
   }
 
+  // --- Look up simulated traffic delay for this route (added in Commit 22) ---
+  // trafficRecord is the entry in traffic.json for this route.
+  // If no record exists, we fall back to 0 delay and 'unavailable' level.
+  const trafficRecord = traffic.find(function (t) { return t.routeId === bus.routeId; });
+
+  // trafficDelayMinutes is the extra minutes to add on top of the normal ETA.
+  // We validate it is a non-negative number before using it.
+  let trafficDelayMinutes = 0;
+  let trafficLevel        = 'unavailable';
+
+  if (
+    trafficRecord &&
+    typeof trafficRecord.delayMinutes === 'number' &&
+    trafficRecord.delayMinutes >= 0
+  ) {
+    trafficDelayMinutes = trafficRecord.delayMinutes;
+    trafficLevel        = trafficRecord.trafficLevel || 'unavailable';
+  }
+
   // --- Build ordered stop objects for this route ---
   const routeStops = route.stopIds.map(function (stopId) {
     return stops.find(function (s) { return s.id === stopId; });
@@ -147,13 +170,15 @@ function calculateETA(busId) {
 
   if (distToFinal < ARRIVAL_THRESHOLD_KM) {
     return {
-      busId:       busId,
-      busNumber:   bus.busNumber,
-      status:      'arrived',
-      message:     'Bus has reached its final destination: ' + finalStop.city,
-      destination: finalStop.city,
-      simulated:   true,
-      lastUpdated: loc.lastUpdated
+      busId:              busId,
+      busNumber:          bus.busNumber,
+      status:             'arrived',
+      message:            'Bus has reached its final destination: ' + finalStop.city,
+      destination:        finalStop.city,
+      trafficLevel:       trafficLevel,
+      trafficDelayMinutes: 0, // no delay applied — bus already arrived
+      simulated:          true,
+      lastUpdated:        loc.lastUpdated
     };
   }
 
@@ -210,13 +235,15 @@ function calculateETA(busId) {
 
   if (upcomingStops.length === 0) {
     return {
-      busId:       busId,
-      busNumber:   bus.busNumber,
-      status:      'arrived',
-      message:     'Bus has reached its final destination: ' + finalStop.city,
-      destination: finalStop.city,
-      simulated:   true,
-      lastUpdated: loc.lastUpdated
+      busId:              busId,
+      busNumber:          bus.busNumber,
+      status:             'arrived',
+      message:            'Bus has reached its final destination: ' + finalStop.city,
+      destination:        finalStop.city,
+      trafficLevel:       trafficLevel,
+      trafficDelayMinutes: 0,
+      simulated:          true,
+      lastUpdated:        loc.lastUpdated
     };
   }
 
@@ -253,18 +280,26 @@ function calculateETA(busId) {
     let   etaMins  = null;
 
     if (speed > 0) {
-      // ETA = (distance / speed) × 60
+      // Normal ETA = (distance / speed) × 60
       etaMins = Math.round((cumulativeDistKm / speed) * 60);
     }
 
+    // Adjusted ETA = Normal ETA + Traffic Delay (added in Commit 22)
+    // The traffic delay is applied once per stop — it represents the extra
+    // time the bus will spend waiting in traffic somewhere on this route.
+    // If the bus is stationary, adjusted ETA is also null.
+    const adjustedEtaMins = etaMins !== null ? etaMins + trafficDelayMinutes : null;
+
     etaList.push({
-      stopId:         stop.id,
-      stopName:       stop.name,
-      city:           stop.city,
-      distanceKm:     distKm,
-      etaMinutes:     etaMins, // null if bus is stationary
-      etaNote:        etaMins !== null
-        ? 'Approx. ' + etaMins + ' min (simulated estimate, not actual road time)'
+      stopId:             stop.id,
+      stopName:           stop.name,
+      city:               stop.city,
+      distanceKm:         distKm,
+      etaMinutes:         adjustedEtaMins, // main ETA field — now traffic-adjusted
+      normalEtaMinutes:   etaMins,         // base ETA without traffic
+      adjustedEtaMinutes: adjustedEtaMins, // ETA including traffic delay
+      etaNote:            adjustedEtaMins !== null
+        ? 'Approx. ' + adjustedEtaMins + ' min (includes simulated traffic delay)'
         : 'Bus is stationary — ETA unavailable'
     });
   });
@@ -278,19 +313,21 @@ function calculateETA(busId) {
   }
 
   return {
-    busId:          busId,
-    busNumber:      bus.busNumber,
-    routeId:        route.id,
-    routeName:      route.routeName,
-    currentLat:     loc.latitude,
-    currentLon:     loc.longitude,
-    currentSpeed:   speed,
-    status:         status,
-    upcomingStops:  etaList,
-    nextStop:       etaList[0] || null,
-    simulated:      true,
-    lastUpdated:    loc.lastUpdated,
-    disclaimer:     'Distances are straight-line approximations. ETA does not include traffic or road conditions.'
+    busId:               busId,
+    busNumber:           bus.busNumber,
+    routeId:             route.id,
+    routeName:           route.routeName,
+    currentLat:          loc.latitude,
+    currentLon:          loc.longitude,
+    currentSpeed:        speed,
+    status:              status,
+    trafficLevel:        trafficLevel,
+    trafficDelayMinutes: trafficDelayMinutes,
+    upcomingStops:       etaList,
+    nextStop:            etaList[0] || null,
+    simulated:           true,
+    lastUpdated:         loc.lastUpdated,
+    disclaimer:          'Distances are straight-line approximations. ETA includes simulated traffic delay.'
   };
 }
 

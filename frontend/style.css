@@ -1064,3 +1064,39 @@ body {
     font-size: 0.82rem;
   }
 }
+
+/* ── 24. Traffic badge  (added in Commit 22) ─────────────── */
+
+/* Sits between the ETA title and the disclaimer */
+.traffic-badge {
+  display: inline-block;
+  padding: 5px 12px;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+
+/* Green — light traffic, no delay */
+.traffic-light {
+  background-color: var(--green-bg);
+  color: var(--green);
+}
+
+/* Orange — moderate traffic */
+.traffic-moderate {
+  background-color: #fff3e0;
+  color: #e65100;
+}
+
+/* Red — heavy traffic */
+.traffic-heavy {
+  background-color: var(--red-bg);
+  color: var(--red);
+}
+
+/* Grey — traffic data unavailable */
+.traffic-unavailable {
+  background-color: #f0f4f8;
+  color: var(--grey-text);
+}

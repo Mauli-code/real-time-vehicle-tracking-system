@@ -704,6 +704,7 @@ async function showLocation(busId) {
 // buildETAHTML(etaData)
 // Takes the response object from GET /api/buses/:id/eta and returns
 // an HTML string for the ETA section.
+// Updated in Commit 22 to show traffic level and adjusted ETA.
 function buildETAHTML(etaData) {
 
   // Bus has arrived at its final destination
@@ -716,8 +717,6 @@ function buildETAHTML(etaData) {
     );
   }
 
-  // Bus is stationary — show the table but with null ETA values
-  // Bus is moving — show normal ETA table
   const upcomingStops = etaData.upcomingStops || [];
 
   if (upcomingStops.length === 0) {
@@ -729,41 +728,70 @@ function buildETAHTML(etaData) {
     );
   }
 
-  // Build the table rows — one per upcoming stop
+  // --- Traffic badge (added in Commit 22) ---
+  const level       = etaData.trafficLevel || 'unavailable';
+  const delayMins   = etaData.trafficDelayMinutes || 0;
+  const badgeClass  = 'traffic-badge traffic-' + level;
+  const levelLabel  = level.charAt(0).toUpperCase() + level.slice(1); // capitalise
+
+  let trafficBadgeHTML;
+  if (level === 'unavailable') {
+    trafficBadgeHTML =
+      '<div class="' + badgeClass + '">🚦 Traffic: Unknown</div>';
+  } else if (delayMins === 0) {
+    trafficBadgeHTML =
+      '<div class="' + badgeClass + '">🚦 ' + levelLabel + ' traffic — no delay</div>';
+  } else {
+    trafficBadgeHTML =
+      '<div class="' + badgeClass + '">🚦 ' + levelLabel + ' traffic — +' + delayMins + ' min delay</div>';
+  }
+
+  // Build table rows — one per upcoming stop
   let rowsHTML = '';
   upcomingStops.forEach(function (stop, index) {
-    // The first row gets the 'next-stop' CSS class for the blue highlight
     const rowClass = (index === 0) ? ' class="next-stop"' : '';
 
-    // ETA display: show minutes or "Stationary" if null
-    let etaDisplay;
-    if (stop.etaMinutes === null) {
-      etaDisplay = '<span class="eta-stationary">Stationary</span>';
+    // Normal ETA (without traffic)
+    let normalDisplay;
+    if (stop.normalEtaMinutes === null || stop.normalEtaMinutes === undefined) {
+      normalDisplay = '<span class="eta-stationary">Stationary</span>';
     } else {
-      etaDisplay = stop.etaMinutes + ' min';
+      normalDisplay = stop.normalEtaMinutes + ' min';
+    }
+
+    // Adjusted ETA (with traffic delay)
+    let adjustedDisplay;
+    if (stop.adjustedEtaMinutes === null || stop.adjustedEtaMinutes === undefined) {
+      adjustedDisplay = '<span class="eta-stationary">Stationary</span>';
+    } else if (delayMins > 0) {
+      adjustedDisplay = '<strong>' + stop.adjustedEtaMinutes + ' min</strong>';
+    } else {
+      adjustedDisplay = stop.adjustedEtaMinutes + ' min';
     }
 
     rowsHTML +=
       '<tr' + rowClass + '>' +
         '<td>' + stop.stopName + '</td>' +
         '<td>' + stop.distanceKm + ' km</td>' +
-        '<td>' + etaDisplay + '</td>' +
+        '<td>' + normalDisplay + '</td>' +
+        '<td>' + adjustedDisplay + '</td>' +
       '</tr>';
   });
 
   return (
     '<div class="eta-section">' +
       '<p class="eta-section-title">🕐 Estimated Arrival Times</p>' +
+      trafficBadgeHTML +
       '<p class="eta-disclaimer">' +
-        'Estimated arrival times are based on simulated GPS location and speed. ' +
-        'Actual arrival times may vary.' +
+        'Arrival times include simulated traffic delays. Actual arrival times may vary.' +
       '</p>' +
       '<table class="eta-table">' +
         '<thead>' +
           '<tr>' +
             '<th>Bus Stop</th>' +
             '<th>Distance</th>' +
-            '<th>ETA</th>' +
+            '<th>Normal ETA</th>' +
+            '<th>Adjusted ETA</th>' +
           '</tr>' +
         '</thead>' +
         '<tbody>' + rowsHTML + '</tbody>' +
