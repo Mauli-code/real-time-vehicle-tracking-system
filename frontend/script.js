@@ -165,6 +165,9 @@ async function loadBuses() {
     // Fill the source and destination dropdowns with values from the loaded data
     populateDropdowns();
 
+    // Update summary statistics using the fetched bus data (added in Commit 26)
+    updateDashboardStats(allBuses);
+
   } catch (error) {
     // Show a friendly error message if the fetch failed completely
     busContainer.innerHTML =
@@ -1003,6 +1006,46 @@ refreshUpcomingBtn.addEventListener('click', findUpcomingBuses);
 
 // Load the stop dropdown as soon as the page opens
 loadStopDropdown();
+
+// ─────────────────────────────────────────────────────────
+//  Dashboard Summary Statistics  (added in Commit 26)
+// ─────────────────────────────────────────────────────────
+
+async function updateDashboardStats(buses) {
+  function setStat(id, value) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = value;
+  }
+
+  if (!buses || buses.length === 0) {
+    ['stat-total-buses','stat-running','stat-available','stat-routes','stat-green']
+      .forEach(function(id) { setStat(id, '—'); });
+    return;
+  }
+
+  // All counts come from the already-fetched allBuses array — no extra API call
+  setStat('stat-total-buses', buses.length);
+  setStat('stat-running',
+    buses.filter(function(b) { return b.journeyStatus === 'running'; }).length);
+  setStat('stat-available',
+    buses.filter(function(b) { return b.available === true; }).length);
+  setStat('stat-green',
+    buses.filter(function(b) { return b.fuelType === 'CNG' || b.fuelType === 'Electric'; }).length);
+
+  // Route count needs a small separate fetch
+  try {
+    const res = await fetch('/api/routes');
+    if (res.ok) {
+      const routes = await res.json();
+      setStat('stat-routes', routes.length);
+    } else {
+      setStat('stat-routes', '—');
+    }
+  } catch (err) {
+    setStat('stat-routes', '—');
+  }
+}
+
 //
 //  buildMapHTML(loc) — builds an OpenStreetMap iframe HTML string
 //  for the given location object.

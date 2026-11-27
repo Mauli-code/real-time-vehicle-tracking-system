@@ -35,22 +35,29 @@
   <!-- ═══════════════════════════════════════
        STATS BAR
        Three quick-glance numbers shown
-       below the hero. Values are static for
-       now — they will become dynamic in a
-       later commit.
+       below the hero. Values are dynamic —
+       calculated from API data by script.js.
   ════════════════════════════════════════ -->
   <div class="stats-bar">
     <div class="stat-item">
-      <span class="stat-number">5</span>
-      <span class="stat-label">Sample Buses</span>
+      <span class="stat-number" id="stat-total-buses">—</span>
+      <span class="stat-label">Total Buses</span>
     </div>
     <div class="stat-item">
-      <span class="stat-number">5</span>
-      <span class="stat-label">HP Districts</span>
+      <span class="stat-number" id="stat-running">—</span>
+      <span class="stat-label">Running</span>
     </div>
     <div class="stat-item">
-      <span class="stat-number">3</span>
-      <span class="stat-label">Fuel Types</span>
+      <span class="stat-number" id="stat-available">—</span>
+      <span class="stat-label">Available</span>
+    </div>
+    <div class="stat-item">
+      <span class="stat-number" id="stat-routes">—</span>
+      <span class="stat-label">Routes</span>
+    </div>
+    <div class="stat-item">
+      <span class="stat-number" id="stat-green">—</span>
+      <span class="stat-label">CNG / Electric</span>
     </div>
   </div>
 
